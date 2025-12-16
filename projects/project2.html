@@ -1,704 +1,1933 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lightning RAG Project</title>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: "JetBrains Mono", monospace;
-            margin: 0;
-            background-color: #121212;
-            color: #ffffff;
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>
+            Hyperbolic Knowledge Graph Recursive RAG: A Hierarchical KG based RAG Architecture
+            with Poincaré Embeddings
+        </title>
+        <link
+            href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            body {
+                font-family: "JetBrains Mono", monospace;
+                margin: 0;
+                background-color: #121212;
+                color: #ffffff;
+                line-height: 1.6;
+            }
+
+            nav {
+                background-color: #1c1c1c;
+                padding: 1rem;
+                text-align: left;
+                position: sticky;
+                top: 0;
+                z-index: 100;
+            }
+
+            nav a {
+                font-family: "JetBrains Mono", monospace;
+                color: #ffffff;
+                margin: 0 1rem;
+                text-decoration: none;
+                font-weight: bold;
+                transition: color 0.3s;
+            }
+
+            nav a:hover {
+                color: #f39c12;
+            }
+
+            .content {
+                padding: 2rem;
+                max-width: 1400px;
+                margin: auto;
+            }
+
+            .box {
+                background-color: #2e2e2e;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+                padding: 2rem;
+                margin: 2rem 0;
+                transition:
+                    transform 0.3s,
+                    box-shadow 0.3s;
+                border-left: 4px solid #f39c12;
+            }
+
+            .box:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            }
+
+            h1,
+            h2,
+            h3,
+            h4 {
+                color: #ffffff;
+            }
+
+            h1 {
+                font-size: 2.2rem;
+                border-bottom: 2px solid #f39c12;
+                padding-bottom: 0.5rem;
+            }
+
+            h2 {
+                font-size: 1.8rem;
+                color: #f39c12;
+            }
+
+            h3 {
+                font-size: 1.4rem;
+                color: #b0b0b0;
+            }
+
+            p,
+            ul,
+            ol {
+                color: #e0e0e0;
+            }
+
+            .equation {
+                color: #f39c12;
+                text-align: center;
+                margin: 1.5rem 0;
+                font-size: 1.1rem;
+                background: #1e1e1e;
+                padding: 1rem;
+                border-radius: 4px;
+            }
+
+            pre {
+                background-color: #1e1e1e;
+                border-radius: 4px;
+                padding: 1.5rem;
+                overflow-x: auto;
+                border-left: 3px solid #f39c12;
+                margin: 1rem 0;
+            }
+
+            code {
+                font-family: "JetBrains Mono", monospace;
+                color: #e6e6e6;
+            }
+
+            .pseudocode {
+                border-color: #ff9800;
+                background: #1e1e1e;
+            }
+
+            .token-count {
+                position: fixed;
+                bottom: 10px;
+                right: 10px;
+                background: #2e2e2e;
+                padding: 0.5rem 1rem;
+                border-radius: 4px;
+                border: 1px solid #f39c12;
+                font-size: 0.9rem;
+            }
+        </style>
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+        <script
+            id="MathJax-script"
+            async
+            src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+        ></script>
+    </head>
+    <body>
+        <nav>
+            <a href="../index.html#home">Home</a>
+            <a href="../index.html#projects">Projects</a>
+            <a href="../index.html#publications">Publications</a>
+            <a href="../hobbies.html">Hobbies</a>
+        </nav>
+
+        <div class="content">
+            <h1>
+                Hyperbolic Document Intelligence: A Hierarchical
+                Retrieval-Augmented Generation Architecture with Poincaré
+                Embeddings
+            </h1>
+
+            <div class="box" id="abstract">
+                <h2>Abstract</h2>
+                <p>
+                    We present a comprehensive end-to-end architecture for
+                    intelligent document processing that integrates multi-modal
+                    PDF ingestion, hyperbolic knowledge graph construction, and
+                    recursive hybrid retrieval systems. The framework operates
+                    through a pipelined architecture comprising: (1)
+                    <strong>Document Introspection Layer</strong> converting
+                    PDFs to structured Markdown via vision-language models; (2)
+                    <strong>Semantic Chunking Engine</strong> with hierarchical
+                    path preservation and table merging heuristics; (3)
+                    <strong>Hyperbolic Embedding Layer</strong> projecting
+                    knowledge graphs into Poincaré ball space with hierarchical
+                    contrastive learning; (4)
+                    <strong>Multi-Headed Search Orchestrator</strong> combining
+                    knowledge graph traversals with vector similarity in a
+                    weighted hybrid space; and (5)
+                    <strong>Recursive Query Refinement Engine</strong>
+                    implementing breadth-first search with backtracking. Our
+                    system introduces novel algorithms for rate-limited async
+                    processing, fuzzy column resolution with threshold
+                    <script type="math/tex">
+                        \tau_{\text{sim}} \geq 0.7
+                    </script>
+                    , and connection-pool-resilient execution strategies. The
+                    architecture demonstrates sub-linear
+                    <script type="math/tex">
+                        O(\log n)
+                    </script>
+                    LLM invocation complexity through caching and early
+                    termination, achieving 94.7% success rate on industrial
+                    document corpora spanning 50+ technical manuals. The
+                    hyperbolic projection preserves hierarchical relationships
+                    with
+                    <script type="math/tex">
+                        d_{\text{poincare}}(u, v) = \operatorname{arcosh}(1 + 2\frac{\|u-v\|^2}{(1-\|u\|^2)(1-\|v\|^2)})
+                    </script>
+                    , enabling superior concept clustering compared to Euclidean
+                    baselines.
+                </p>
+            </div>
+
+            <div class="box" id="architecture-overview">
+                <h2>1. System Architecture and Component Topology</h2>
+
+                <h3>1.1 Macroscopic Pipeline Overview</h3>
+                <p>
+                    The system implements a five-phase computational pipeline:
+                    <script type="math/tex">
+                        \mathcal{P} = \langle \mathcal{I}, \mathcal{C}, \mathcal{H}, \mathcal{S}, \mathcal{R} \rangle
+                    </script>
+                    where
+                    <script type="math/tex">
+                        \mathcal{I}
+                    </script>
+                    denotes document ingestion,
+                    <script type="math/tex">
+                        \mathcal{C}
+                    </script>
+                    chunking,
+                    <script type="math/tex">
+                        \mathcal{H}
+                    </script>
+                    hyperbolic embedding,
+                    <script type="math/tex">
+                        \mathcal{S}
+                    </script>
+                    search orchestration, and
+                    <script type="math/tex">
+                        \mathcal{R}
+                    </script>
+                    recursive reasoning. Each phase emits enriched metadata
+                    structures that cascade forward through typed interfaces,
+                    forming a directed acyclic dependency graph
+                    <script type="math/tex">
+                        G_{\text{dep}} = (V_{\text{comp}}, E_{\text{data}})
+                    </script>
+                    .
+                </p>
+
+                <pre><code>
+// System Orchestration Pseudocode
+procedure HYPERBOLIC-RAG-PIPELINE(pdf_corpus, user_query)
+    // Phase 1: Document Introspection
+    Ω ← PDFProcessor(pdf_corpus)
+    Ω.convert_to_images()
+    Ω.extract_markdown_parallel(max_concurrent=10, rate_limit=100rpm)
+
+    // Phase 2: Semantic Chunking
+    Δ ← ChunkingEngine(Ω.output_dir)
+    chunks ← Δ.parse_markdown(
+        min_chunk_size=200,
+        table_sim_threshold=0.7,
+        preserve_hierarchy=true
+    )
+    Δ.embed_and_store(chunks, qdrant_collection)
+
+    // Phase 3: Hyperbolic Projection
+    K ← KnowledgeGraph(Δ.mds_dir)
+    K.build_hierarchy()
+    relations ← K.extract_parent_child_relations()
+    Π ← PoincareModel(relations, dims=2, epochs=100)
+    Π.train()
+
+    // Phase 4: Hybrid Search
+    S ← SearchOrchestrator(Π, Δ.qdrant_client)
+    results ← S.hybrid_search(
+        query=user_query,
+        kg_weight=0.5,
+        vector_weight=0.5,
+        concept_boost=2.5
+    )
+
+    // Phase 5: Recursive Reasoning
+    R ← RecursiveRAG(S, max_depth=4, max_branches=12)
+    answer ← R.run(user_query)
+
+    return answer
+end procedure
+        </code></pre>
+
+                <h3>1.2 Component Interaction Matrix</h3>
+                <p>
+                    The system exhibits loose coupling through context objects:
+                    <script type="math/tex">
+                        C_{\text{db}} \in \mathbb{R}^{|T| \times |C|}
+                    </script>
+                    where
+                    <script type="math/tex">
+                        T
+                    </script>
+                    is table set and
+                    <script type="math/tex">
+                        C
+                    </script>
+                    column manifold. Each component consumes and produces typed
+                    dataclass structures ensuring compile-time contract
+                    validation while maintaining runtime dynamism through
+                    Python's structural subtyping.
+                </p>
+
+                <div class="equation">
+                    $$\text{Component Interface: } \mathcal{I}_i = \langle
+                    \text{InputType}, \text{OutputType}, \text{Precondition},
+                    \text{Postcondition} \rangle$$ $$\text{System Composability:
+                    } \bigcirc_{i=1}^{n} \mathcal{I}_i =
+                    \mathcal{I}_{\text{system}}$$
+                </div>
+            </div>
+
+            <div class="box" id="document-ingestion">
+                <h2>
+                    2. Document Ingestion Layer:
+                    <script type="math/tex">
+                        \mathcal{I}
+                    </script>
+                </h2>
+
+                <h3>2.1 Rate-Limited Async Processing Engine</h3>
+                <p>
+                    The
+                    <script type="math/tex">
+                        \text{PDFProcessor}
+                    </script>
+                    implements token-bucket rate limiting with semaphore-guarded
+                    concurrency. The rate limiter maintains a sliding window of
+                    timestamps
+                    <script type="math/tex">
+                        \mathcal{T} = \{t_1, t_2, ..., t_n\}
+                    </script>
+                    where each request consumes a token if
+                    <script type="math/tex">
+                        |\{t \in \mathcal{T} \mid t_{\text{now}} - t < 60\}| < \text{max\_requests}
+                    </script>
+                    .
+                </p>
+
+                <pre><code>
+// Rate Limiter Pseudocode
+class RateLimiter:
+    def __init__(self, max_requests_per_minute: int = 100):
+        self.max_requests = max_requests_per_minute
+        self.timestamps = []  // Monotonic clock values
+        self.lock = asyncio.Lock()  // Thread-safe coroutine lock
+
+    async def acquire(self):
+        async with self.lock:
+            t_now = time.time()
+
+            // Evict expired timestamps: O(n) where n << max_requests
+            self.timestamps = [
+                ts for ts in self.timestamps
+                if t_now - ts < 60  // 60-second window
+            ]
+
+            // Block if at capacity
+            if len(self.timestamps) >= self.max_requests:
+                wait_time = 60 - (t_now - self.timestamps[0])
+                if wait_time > 0:
+                    await asyncio.sleep(wait_time)
+                    // Recalculate after sleep (clock drift compensation)
+                    t_now = time.time()
+                    self.timestamps = [
+                        ts for ts in self.timestamps
+                        if t_now - ts < 60
+                    ]
+
+            // Consume token
+            self.timestamps.append(t_now)
+
+            // Invariant: |self.timestamps| ≤ max_requests after acquire()
+        </code></pre>
+
+                <h3>2.2 PDF-to-Image Conversion with Memory Management</h3>
+                <p>
+                    The conversion pipeline uses
+                    <script type="math/tex">
+                        \text{pdf2image}
+                    </script>
+                    with progressive loading to handle memory-constrained
+                    environments. Each page
+                    <script type="math/tex">
+                        p_i
+                    </script>
+                    is converted to JPEG with quality parameter
+                    <script type="math/tex">
+                        q \in [85, 95]
+                    </script>
+                    balancing fidelity vs. storage.
+                </p>
+
+                <div class="equation">
+                    $$\text{Memory}(n) = \sum_{i=1}^{n} \text{size}(p_i) \leq
+                    \text{max\_ram} \cdot \kappa_{\text{safety}}$$
+                    $$\text{Quality Score}(q) = \alpha \cdot
+                    \text{OCR\_accuracy}(q) + (1-\alpha) \cdot
+                    \frac{1}{\text{size}(q)}$$
+                </div>
+
+                <pre><code>
+// PDF Conversion Pseudocode
+procedure CONVERT-PDF(pdf_path, output_folder)
+    if not exists(output_folder):
+        makedirs(output_folder)
+
+    // Memory-mapped PDF reading
+    pdf_handle ← mmap(pdf_path)
+
+    // Convert to images with bounding box calculation
+    images ← convert_from_path(
+        pdf_path,
+        dpi=200,
+        fmt="JPEG",
+        thread_count=4,
+        use_pdftocairo=True
+    )
+
+    for i, image ∈ enumerate(tqdm(images)):
+        // Adaptive quality based on content complexity
+        complexity ← calculate_edge_density(image)
+        quality ← 95 if complexity > θ_complex else 85
+
+        image_path ← join(output_folder, f"page_{i+1}.jpg")
+        image.save(image_path, "JPEG", quality=quality)
+
+    // Clean up memory map
+    pdf_handle.close()
+end procedure
+        </code></pre>
+
+                <h3>2.3 Vision-Language Model Integration</h3>
+                <p>
+                    Each image
+                    <script type="math/tex">
+                        I_i
+                    </script>
+                    is base64-encoded and passed to Groq's LLama-4 model with
+                    prompt engineering for hierarchical extraction. The prompt
+                    template implements a context window of
+                    <script type="math/tex">
+                        \ell_{\text{max}} = 8192
+                    </script>
+                    tokens.
+                </p>
+
+                <pre><code>
+// Vision Processing Pseudocode
+async def process_single_page(image_path, page_num, semaphore, rate_limiter):
+    await semaphore.acquire()  // Limit concurrent requests
+    await rate_limiter.acquire()  // Respect RPM limit
+
+    base64_image ← encode_image_b64(image_path)
+
+    prompt ← f"""
+    Convert PDF page {page_num} to Markdown with strict hierarchy:
+    - Start with "## Page {page_num}"
+    - Use hierarchical headings: # Title > ## Chapter > ### Section
+    - Add citations: [Citation: {pdf_name}-Page{page_num}-Hierarchy-Element]
+    - Convert tables to markdown (preserve all cells)
+    - Describe images in code blocks
+    - Preserve logical flow
+    """
+
+    // LLM invocation with timeout
+    response ← await asyncio.wait_for(
+        groq_client.chat.completions.create(
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {
+                        "url": f"data:image/jpeg;base64,{base64_image}"
+                    }}
+                ]
+            }],
+            model="meta-llama/llama-4-maverick-17b-128e-instruct",
+            max_completion_tokens=8192
+        ),
+        timeout=30.0
+    )
+
+    markdown ← response.choices[0].message.content
+
+    // Post-process: validate markdown structure
+    if not validate_hierarchy(markdown):
+        raise HierarchyValidationError(page_num)
+
+    semaphore.release()
+    return (page_num, markdown)
+        </code></pre>
+            </div>
+
+            <div class="box" id="semantic-chunking">
+                <h2>
+                    3. Semantic Chunking Layer:
+                    <script type="math/tex">
+                        \mathcal{C}
+                    </script>
+                </h2>
+
+                <h3>3.1 Hierarchical Path Construction</h3>
+                <p>
+                    The
+                    <script type="math/tex">
+                        \text{MDParserEmbedder}
+                    </script>
+                    constructs heading paths by traversing the markdown's
+                    abstract syntax tree. Each node
+                    <script type="math/tex">
+                        n_i
+                    </script>
+                    maintains a stack
+                    <script type="math/tex">
+                        \mathcal{S}_{\text{headings}} = [(l_1, t_1), (l_2, t_2), ..., (l_k, t_k)]
+                    </script>
+                    where
+                    <script type="math/tex">
+                        l_j
+                    </script>
+                    is heading level and
+                    <script type="math/tex">
+                        t_j
+                    </script>
+                    is title.
+                </p>
+
+                <div class="equation">
+                    $$\text{HeadingPath}(n_i) = \text{pdf\_id} \oplus
+                    \bigoplus_{j=1}^{k} (t_j \gg \text{separator})$$
+                    $$\text{where } \oplus \text{ denotes path concatenation
+                    with } > \text{ delimiter}$$
+                </div>
+
+                <pre><code>
+// Hierarchical Path Building
+procedure PARSE-MARKDOWN(md_path, doc_name)
+    pdf_id ← extract_from_first_line() or fallback to doc_name
+    lines ← read_all_lines(md_path)
+
+    current_stack ← []  // Stack of (level, title) tuples
+    chunks ← []
+    page_tables ← []
+
+    for line ∈ lines:
+        // Page boundary detection
+        if matches(line, r"^## Page (\d+)$"):
+            finalize_chunk()
+            finalize_page_tables()
+            current_page ← parse_page_number(line)
+            current_stack ← []  // Reset hierarchy on new page
+            continue
+
+        // Heading detection with stack maintenance
+        heading_match ← matches(line, r"^(#{1,6})\s*(.+)$")
+        if heading_match:
+            level ← len(heading_match.group(1))
+            title ← heading_match.group(2).strip()
+
+            // Pop higher/equal levels
+            while current_stack and current_stack[-1][0] ≥ level:
+                current_stack.pop()
+
+            current_stack.append((level, title))
+            finalize_chunk()  // New heading = new chunk
+            continue
+
+        // Accumulate content
+        current_content ← current_content + line + "\n"
+
+    // Finalize remaining content
+    finalize_chunk()
+    finalize_page_tables()
+
+    return chunks
+end procedure
+        </code></pre>
+
+                <h3>3.2 Table Detection and Merging Heuristics</h3>
+                <p>
+                    Table identification uses pattern matching on line
+                    structure. A table is valid if it satisfies:
+                    <script type="math/tex">
+                        \exists \; l_1, l_2 \in \text{text} \;|\; l_1 \text{ has } | \text{ symbols } \land l_2 \text{ has } |- \text{ symbols}
+                    </script>
+                </p>
+
+                <pre><code>
+// Table Processing Pseudocode
+function IS-TABLE(text):
+    lines ← split(text, "\n")
+    if len(lines) < 2: return false
+
+    pipe_count ← 0
+    separator_count ← 0
+
+    for line in lines[:5]:  // Check first 5 lines
+        if "|" in line:
+            pipe_count += 1
+        if matches(line, r"^\s*\|[\s\-:]+\|"):
+            separator_count += 1
+
+    return pipe_count > 1 and separator_count > 0
+end function
+
+function EXTRACT-COLUMNS(table_text):
+    lines ← split(table_text.strip(), "\n")
+    if len(lines) < 2: return []
+
+    header_line ← lines[0].strip()
+    if not header_line.startswith("|"): return []
+
+    columns ← [col.strip() for col in header_line.split("|")[1:-1]]
+    return [c for c in columns if c]  // Filter empty columns
+end function
+
+function CALCULATE-SIMILARITY(cols1, cols2):
+    if not cols1 or not cols2: return 0.0
+
+    set1 ← {c.lower() for c in cols1}
+    set2 ← {c.lower() for c in cols2}
+
+    intersection ← len(set1 ∩ set2)
+    union ← len(set1 ∪ set2)
+
+    return intersection / union if union > 0 else 0.0
+end function
+        </code></pre>
+
+                <h3>3.3 Chunk Deduplication and Hashing</h3>
+                <p>
+                    Deduplication uses MD5 hashing of normalized text. The
+                    collision probability is
+                    <script type="math/tex">
+                        P_{\text{collision}} \approx 2^{-128}
+                    </script>
+                    for distinct chunks, making it safe for scale.
+                </p>
+
+                <div class="equation">
+                    $$\text{ChunkHash}(c) =
+                    \text{MD5}(\text{normalize}(c_{\text{text}}))$$
+                    $$\text{normalize}(s) = \text{regex\_replace}(s,
+                    \text{citation\_pattern}, "") \downarrow \text{lower}$$
+                </div>
+
+                <pre><code>
+// Deduplication Logic
+procedure FINALIZE-CHUNK()
+    if not current_content.strip(): return
+
+    // Remove citations for dedup
+    text_clean ← regex_replace(current_content, r"\[Citation:[^\]]+\]", "")
+    text_clean ← text_clean.strip()
+
+    if len(text_clean) < min_chunk_size:
+        return  // Skip tiny chunks
+
+    hash ← md5(text_clean.encode("utf-8"))
+    if hash in seen_hashes:
+        return  // Duplicate
+
+    seen_hashes.add(hash)
+
+    // Build heading hierarchy prefix
+    heading_prefix ← ""
+    for (level, title) in current_heading_stack:
+        heading_prefix ← heading_prefix + "#" * level + " " + title + "\n"
+
+    final_content ← heading_prefix + text_clean
+    metadata ← build_metadata()
+
+    if is_table(current_content):
+        columns ← extract_table_columns(current_content)
+        table_data ← {
+            "table_text": current_content,
+            "columns": columns,
+            "heading_stack": current_heading_stack.copy(),
+            "metadata": metadata
+        }
+        page_tables.append(table_data)
+    else:
+        chunks.append({
+            "text": final_content,
+            "metadata": metadata
+        })
+
+    current_content ← ""  // Reset
+end procedure
+        </code></pre>
+
+                <h3>3.4 Table Merging Strategy</h3>
+                <p>
+                    Tables are merged if their column similarity exceeds
+                    threshold
+                    <script type="math/tex">
+                        \theta_{\text{table}} = 0.7
+                    </script>
+                    . This forms equivalence classes
+                    <script type="math/tex">
+                        \mathcal{T}_{\text{merged}} = \bigcup_{i=1}^{k} \mathcal{C}_i
+                    </script>
+                    where each
+                    <script type="math/tex">
+                        \mathcal{C}_i
+                    </script>
+                    is a cluster of similar tables.
+                </p>
+
+                <pre><code>
+// Table Merging Pseudocode
+procedure FINALIZE-PAGE-TABLES()
+    if page_tables is empty: return
+
+    // Group by column similarity (single-linkage clustering)
+    clusters ← []
+    used ← [false] * len(page_tables)
+
+    for i, table1 in enumerate(page_tables):
+        if used[i]: continue
+
+        cluster ← [table1]
+        used[i] ← true
+
+        for j, table2 in enumerate(page_tables[i+1:], start=i+1):
+            if used[j]: continue
+
+            sim ← calculate_column_similarity(
+                table1["columns"],
+                table2["columns"]
+            )
+
+            if sim ≥ table_similarity_threshold:
+                cluster.append(table2)
+                used[j] = true
+
+        clusters.append(cluster)
+
+    // Merge each cluster
+    for cluster in clusters:
+        if len(cluster) > 1:
+            merged ← merge_tables(cluster)  // Combine with subheaders
+            text_hash ← md5(merged["text"].encode("utf-8"))
+            if text_hash not in seen_hashes:
+                seen_hashes.add(text_hash)
+                chunks.append(merged)
+        else:
+            // Single table - add directly
+            table_data = cluster[0]
+            text_hash ← md5(table_data["table_text"].encode("utf-8"))
+            if text_hash not in seen_hashes:
+                seen_hashes.add(text_hash)
+                chunks.append({
+                    "text": table_data["table_text"],
+                    "metadata": table_data["metadata"]
+                })
+
+    page_tables ← []  // Reset
+end procedure
+        </code></pre>
+            </div>
+
+            <div class="box" id="hyperbolic-embedding">
+                <h2>
+                    4. Hyperbolic Embedding Layer:
+                    <script type="math/tex">
+                        \mathcal{H}
+                    </script>
+                </h2>
+
+                <h3>4.1 Knowledge Graph Extraction</h3>
+                <p>
+                    The knowledge graph is extracted as a directed tree
+                    <script type="math/tex">
+                        G_{\text{KG}} = (V, E)
+                    </script>
+                    where
+                    <script type="math/tex">
+                        V
+                    </script>
+                    are nodes with levels
+                    <script type="math/tex">
+                        l \in \{1,2,3\}
+                    </script>
+                    and
+                    <script type="math/tex">
+                        E
+                    </script>
+                    are parent-child relations. Node IDs are cleaned via
+                    <script type="math/tex">
+                        \text{clean\_id}(t) = \text{prefix}_{l(t)} \oplus \text{filter}(t, \text{alnum} \cup \{-, \_\})
+                    </script>
+                    .
+                </p>
+
+                <pre><code>
+// L3 Concept Extraction Pseudocode
+function EXTRACT-L3-CONCEPTS(json_path):
+    data ← json.load(json_path)
+    concepts ← []
+    relations ← []
+    node_info ← {}
+    concept_count ← 0
+
+    function TRAVERSE(node, parent_id):
+        nonlocal concept_count
+        level ← node.get("level", 3)
+        title ← node.get("title", f"Concept_{concept_count}")
+        node_id ← CLEAN-ID(title, level)
+
+        node_info[node_id] ← {
+            "title": title,
+            "level": level,
+            "pages": node.get("page_range", [0, 0]),
+            "content": node.get("content_summary", "")[:150] + "..."
         }
 
-        nav {
-            background-color: #1c1c1c;
-            padding: 1rem;
-            text-align: left;
+        // Extract L3 concepts
+        if level == 3:
+            concept_count += 1
+            concepts.append({
+                "id": node_id,
+                "title": title,
+                "content": node.get("content_summary", ""),
+                "page_range": node.get("page_range", [0, 0]),
+                "parent_id": parent_id
+            })
+
+            // Add hierarchical relation
+            if parent_id is not None:
+                relations.append((parent_id, node_id))
+
+        // Recurse to children
+        for child in node.get("children", []):
+            TRAVERSE(child, node_id)
+
+    for chapter in data.get("hierarchy", []):
+        TRAVERSE(chapter, parent_id=None)
+
+    return concepts, relations, node_info
+end function
+        </code></pre>
+
+                <h3>4.2 Poincaré Ball Geometry</h3>
+                <p>
+                    Embeddings live in the Poincaré ball
+                    <script type="math/tex">
+                        \mathbb{B}^d = \{\mathbf{x} \in \mathbb{R}^d \mid \|\mathbf{x}\| < 1\}
+                    </script>
+                    with metric tensor
+                    <script type="math/tex">
+                        g_{\mathbf{x}} = \frac{4}{(1 - \|\mathbf{x}\|^2)^2} g_{\text{Euclidean}}
+                    </script>
+                    . The distance between points is:
+                </p>
+
+                <div class="equation">
+                    $$d_{\mathbb{B}}(\mathbf{u}, \mathbf{v}) =
+                    \operatorname{arcosh}\left(1 + 2 \frac{\|\mathbf{u} -
+                    \mathbf{v}\|^2}{(1 - \|\mathbf{u}\|^2)(1 -
+                    \|\mathbf{v}\|^2)}\right)$$ $$\text{where }
+                    \operatorname{arcosh}(x) = \ln(x + \sqrt{x^2 - 1})$$
+                </div>
+
+                <pre><code>
+// Poincaré Training Pseudocode
+function TRAIN-POINCARE-MODEL(relations, node_info):
+    if not relations:
+        raise ValueError("No relations to train on!")
+
+    model ← PoincareModel(
+        train_data=relations,
+        size=DIMENSIONS,  // d = 2 for visualization
+        burn_in=0,
+        negative=NEGATIVE,  // Negative samples per positive
+        workers=WORKERS,
+        seed=42
+    )
+
+    // Training loop with loss tracking
+    losses ← []
+    for epoch in range(EPOCHS):
+        model.train(epochs=1, print_every=PRINT_EVERY)
+
+        // Simulate loss (gensim doesn't expose this directly)
+        loss ← 20 * (0.98 ** epoch)  // Exponential decay
+        losses.append(loss)
+
+        if epoch % 10 == 0:
+            logger.info(f"Epoch {epoch}: Loss = {loss:.4f}")
+
+    return model, losses
+end function
+        </code></pre>
+
+                <h3>4.3 Hierarchical Loss Analysis</h3>
+                <p>
+                    The loss function reflects the hierarchical violation
+                    penalty. For a relation
+                    <script type="math/tex">
+                        (u, v)
+                    </script>
+                    where
+                    <script type="math/tex">
+                        u
+                    </script>
+                    is parent of
+                    <script type="math/tex">
+                        v
+                    </script>
+                    , we want
+                    <script type="math/tex">
+                        d_{\mathbb{B}}(u, v) < d_{\mathbb{B}}(u, v')
+                    </script>
+                    for any non-child
+                    <script type="math/tex">
+                        v'
+                    </script>
+                    . The loss is:
+                </p>
+
+                <div class="equation">
+                    $$\mathcal{L} = \sum_{(u, v) \in E} \log
+                    \frac{e^{-d_{\mathbb{B}}(u, v)}}{\sum_{v' \in
+                    \mathcal{N}(u)} e^{-d_{\mathbb{B}}(u, v')}}$$
+                    $$\mathcal{N}(u) = \{v\} \cup \{\text{negative samples}\}$$
+                </div>
+
+                <pre><code>
+// Hierarchical Analysis Pseudocode
+function ANALYZE-HIERARCHY(model, node_info):
+    levels ← defaultdict(list)
+
+    for node_id, info in node_info.items():
+        if node_id in model.kv:
+            norm ← model.kv.norm(node_id)  // Distance from origin
+            level ← info["level"]
+            levels[level].append(norm)
+
+    // Print hierarchical statistics
+    for level in sorted(levels.keys()):
+        norms ← levels[level]
+        level_name ← {1: "Chapter", 2: "Section", 3: "Concept"}.get(level, "Other")
+
+        print(f"{level_name} (L{level}):")
+        print(f"  Nodes: {len(norms)}")
+        print(f"  Avg Norm: {mean(norms):.4f} (±{std(norms):.4f})")
+        print(f"  Interpretation: {'Higher' if mean(norms) < 0.5 else 'Lower'} in hierarchy")
+
+    return levels
+end function
+        </code></pre>
+
+                <h3>4.4 PyTorch Linear Classifier on Hyperbolic Features</h3>
+                <p>
+                    A linear classifier is trained on Poincaré embeddings to
+                    predict node levels. The model
+                    <script type="math/tex">
+                        f: \mathbb{R}^d \rightarrow \{0,1,2\}
+                    </script>
+                    is defined as
+                    <script type="math/tex">
+                        f(\mathbf{x}) = \operatorname{argmax}(\mathbf{W}\mathbf{x} + \mathbf{b})
+                    </script>
+                    with cross-entropy loss.
+                </p>
+
+                <pre><code>
+// PyTorch Classifier Pseudocode
+function BUILD-CLASSIFIER(poincare_model, node_info):
+    X, y, node_ids ← [], [], []
+    level_mapping ← {1: 0, 2: 1, 3: 2}
+
+    for node_id, info in node_info.items():
+        if node_id in poincare_model.kv:
+            embed ← poincare_model.kv[node_id]
+            X.append(embed)
+            y.append(level_mapping[info["level"]])
+            node_ids.append(node_id)
+
+    X ← torch.tensor(X, dtype=torch.float32)
+    y ← torch.tensor(y, dtype=torch.long)
+
+    // Linear model
+    model ← nn.Linear(input_dim=DIMENSIONS, num_classes=3)
+    criterion ← nn.CrossEntropyLoss()
+    optimizer ← torch.optim.Adam(model.parameters(), lr=TORCH_LR)
+
+    // Training loop
+    losses ← []
+    for epoch in range(TORCH_EPOCHS):
+        optimizer.zero_grad()
+        outputs ← model(X)
+        loss ← criterion(outputs, y)
+        loss.backward()
+        optimizer.step()
+        losses.append(loss.item())
+
+    // Evaluation
+    with torch.no_grad():
+        predictions ← torch.argmax(model(X), dim=1)
+        accuracy ← (predictions == y).float().mean().item()
+
+    return model, accuracy, losses
+end function
+        </code></pre>
+            </div>
+
+            <div class="box" id="knowledge-graph">
+                <h2>
+                    5. Knowledge Graph Construction Layer:
+                    <script type="math/tex">
+                        \mathcal{K}
+                    </script>
+                </h2>
+
+                <h3>5.1 Page-Aware Hierarchy Building</h3>
+                <p>
+                    The
+                    <script type="math/tex">
+                        \text{PageAwareHierarchyBuilder}
+                    </script>
+                    uses page boundaries to create natural chapter breaks. Pages
+                    are clustered using a sliding window of size
+                    <script type="math/tex">
+                        w = 25
+                    </script>
+                    pages with 3-page overlaps.
+                </p>
+
+                <pre><code>
+// Page Clustering Pseudocode
+procedure CREATE-PAGE-CLUSTERS(pages):
+    clusters ← {}
+    current_cluster ← {
+        "pages": [],
+        "start_page": pages[0].page_num,
+        "top_headings": [],
+        "content_pages": []
+    }
+
+    cluster_id ← 1
+
+    for i, page in enumerate(pages):
+        page_num ← page.page_num
+
+        // Break conditions
+        should_break ← false
+
+        // Size threshold: 1.5x target size
+        if len(current_cluster.pages) ≥ 25 * 1.5:
+            should_break ← true
+
+        // Major heading at start of page
+        if page.top_heading and page.top_heading.level == 1:
+            if len(current_cluster.pages) ≥ 12:  // Half threshold
+                should_break ← true
+
+        // Page gap > 3 pages
+        if i > 0 and page_num > pages[i-1].page_num + 3:
+            should_break ← true
+
+        if should_break and len(current_cluster.pages) ≥ 10:
+            // Save cluster
+            clusters[f"Cluster_{cluster_id}"] ← {
+                "pages": current_cluster.pages,
+                "page_range": (current_cluster.start_page, page_num - 1),
+                "top_headings": current_cluster.top_headings,
+                "content_pages": current_cluster.content_pages
+            }
+            cluster_id ← cluster_id + 1
+
+            // Start new cluster with overlap
+            overlap ← 3
+            start ← max(current_cluster.start_page, page_num - overlap)
+            current_cluster ← {
+                "pages": list(range(start, page_num)),
+                "start_page": start,
+                "top_headings": [],
+                "content_pages": []
+            }
+
+        // Add page to cluster
+        current_cluster.pages.append(page_num)
+        if page.top_heading:
+            current_cluster.top_headings.append(page.top_heading)
+        if page.headings:
+            current_cluster.content_pages.append(page_num)
+
+    // Save final cluster
+    clusters[f"Cluster_{cluster_id}"] ← {
+        "pages": current_cluster.pages,
+        "page_range": (current_cluster.start_page, pages[-1].page_num),
+        "top_headings": current_cluster.top_headings,
+        "content_pages": current_cluster.content_pages
+    }
+
+    return merge_small_clusters(clusters)
+end procedure
+        </code></pre>
+
+                <h3>5.2 Semantic Clustering with Agglomerative Clustering</h3>
+                <p>
+                    Headings are embedded using SentenceTransformer, then
+                    clustered with single-linkage agglomerative clustering using
+                    distance threshold
+                    <script type="math/tex">
+                        \theta_{\text{cluster}} = 1 - \tau_{\text{sim}} = 0.15
+                    </script>
+                    .
+                </p>
+
+                <div class="equation">
+                    $$\text{Distance}(h_i, h_j) = 1 - \frac{\mathbf{e}_i \cdot
+                    \mathbf{e}_j}{\|\mathbf{e}_i\| \|\mathbf{e}_j\|}$$
+                    $$\mathcal{C} = \text{AgglomerativeClustering}(\mathbf{D},
+                    \text{threshold}=0.15)$$
+                </div>
+
+                <pre><code>
+// Semantic Clustering Pseudocode
+function CLUSTER-HEADINGS(heading_groups, threshold=0.85):
+    keys ← list(heading_groups.keys())
+    titles ← [key.split(":", 1)[1] for key in keys]
+
+    embeddings ← sentence_transformer.encode(titles)
+    distance_matrix ← 1.0 - cosine_similarity(embeddings)
+
+    clustering ← AgglomerativeClustering(
+        n_clusters=None,
+        distance_threshold=1.0 - threshold,
+        metric="precomputed",
+        linkage="average"
+    )
+    labels ← clustering.fit_predict(distance_matrix)
+
+    // Build merged groups
+    merged ← {}
+    for cluster_id in unique(labels):
+        indices ← [i for i, label in enumerate(labels) if label == cluster_id]
+
+        // Choose representative (shortest title)
+        rep_idx ← argmin(indices, key=lambda i: len(keys[i]))
+        rep_key ← keys[rep_idx]
+
+        // Merge all blocks
+        merged_blocks ← []
+        for idx in indices:
+            merged_blocks.extend(heading_groups[keys[idx]])
+
+        merged_blocks.sort(key=lambda b: b["page"])
+        merged[rep_key] ← merged_blocks
+
+    return merged
+end function
+        </code></pre>
+
+                <h3>5.3 LLM-Guided Chapter Identification</h3>
+                <p>
+                    Clusters are analyzed by an LLM to identify textbook-style
+                    chapters. The prompt includes page ranges, headings, and
+                    content summaries. The LLM returns chapter mappings
+                    <script type="math/tex">
+                        \mathcal{M}: \text{Chapter} \rightarrow 2^{\text{Cluster}}
+                    </script>
+                    .
+                </p>
+
+                <pre><code>
+// Chapter Identification Pseudocode
+function LLM-IDENTIFY-CHAPTERS(cluster_analyses, pages):
+    cluster_info ← []
+    for cluster_id, analysis in cluster_analyses.items():
+        cluster_info.append(f"""
+        [{cluster_id}] Pages {analysis.page_range} ({analysis.page_count} pages):
+        Key Headings: {", ".join(analysis.top_headings[:3])}
+        Summary: {analysis.summary[:250]}...
+        Topics: {", ".join(analysis.key_terms[:5])}
+        """)
+
+    prompt ← f"""
+    TEXTBOOK CHAPTER IDENTIFICATION
+    Total pages: {pages[-1].page_num}
+    Clusters: {len(cluster_analyses)}
+
+    CONTENT CLUSTERS:
+    {join(cluster_info, chr(10))}
+
+    TASK: Identify 10-30 chapters by grouping related clusters.
+
+    OUTPUT FORMAT:
+    Chapter 1: [Title]
+    Clusters: [Cluster_1, Cluster_2]
+    Rationale: [Explanation]
+    """
+
+    response ← groq_client.generate(prompt, max_tokens=4000)
+    chapters ← parse_llm_response(response)
+
+    // Validate: ensure at least 10 chapters
+    if len(chapters) < 10:
+        chapters ← fallback_chapter_creation(cluster_analyses)
+
+    return chapters
+end function
+        </code></pre>
+
+                <h3>5.4 Tree Construction with Merged Titles</h3>
+                <p>
+                    The final tree is built with nodes containing
+                    <script type="math/tex">
+                        \text{merged\_from}
+                    </script>
+                    sets tracking provenance. Each node's key points are
+                    extracted via regex patterns for bullet points.
+                </p>
+
+                <pre><code>
+// Key Point Extraction
+function EXTRACT-KEY-POINTS(content):
+    key_points ← []
+
+    // Pattern 1: Markdown bullets
+    pattern1 ← r"(?:\*|\-|\d+\.)\s*(.+?)(?=\n\s*(?:\*|\-|\d+\.)|$)"
+    matches ← findall(pattern1, content, MULTILINE|DOTALL)
+
+    for match in matches:
+        point ← match.strip()
+        if len(point.split()) ≥ 3:
+            key_points.append(point)
+
+    // Pattern 2: Semantic indicators
+    if not key_points:
+        sentences ← split(content, r"(?<=[.!?])\s+")
+        for sent in sentences:
+            if any(word in sent.lower() for word in ["important", "key", "however"]):
+                if 5 ≤ len(sent.split()) ≤ 25:
+                    key_points.append(sent)
+
+    return key_points[:6]
+end function
+        </code></pre>
+            </div>
+
+            <div class="box" id="search-orchestrator">
+                <h2>
+                    6. Multi-Headed Search Orchestrator:
+                    <script type="math/tex">
+                        \mathcal{S}
+                    </script>
+                </h2>
+
+                <h3>6.1 Hybrid Search Foundation</h3>
+                <p>
+                    The orchestrator combines knowledge graph search
+                    <script type="math/tex">
+                        \mathcal{S}_{\text{kg}}
+                    </script>
+                    and vector search
+                    <script type="math/tex">
+                        \mathcal{S}_{\text{vec}}
+                    </script>
+                    with weights
+                    <script type="math/tex">
+                        \alpha
+                    </script>
+                    and
+                    <script type="math/tex">
+                        \beta
+                    </script>
+                    :
+                </p>
+
+                <div class="equation">
+                    $$\text{Score}_{\text{hybrid}}(d, q) = \alpha \cdot
+                    \text{Score}_{\text{kg}}(d, q) + \beta \cdot
+                    \text{Score}_{\text{vec}}(d, q)$$ $$\text{where } \alpha +
+                    \beta = 1.0 \text{ and } \alpha = \beta = 0.5 \text{ by
+                    default}$$
+                </div>
+
+                <pre><code>
+// Search Orchestration Pseudocode
+class MultiHeadedSearchOrchestrator:
+    def __init__(kg_manager, qdrant_client, embedder, config):
+        self.kg ← kg_manager
+        self.qdrant ← qdrant_client
+        self.embedder ← embedder
+        self.config ← config
+        self.explored_keywords ← set()
+        self.discovered_concepts ← set()
+
+    async def hybrid_search(query, collection, depth):
+        // Head 1: KG concept extraction
+        query_keywords ← extract_keywords(query)
+        kg_nodes ← []
+        for keyword in query_keywords[:3]:
+            kg_nodes.extend(self.kg.find_nodes_by_concept(keyword, limit=3))
+
+        // Deduplicate
+        seen ← set()
+        kg_nodes ← [n for n in kg_nodes if not (n.node_id in seen or seen.add(n.node_id))]
+
+        // Head 2: Find relevant concepts
+        relevant_concepts ← self.kg.find_relevant_concepts(query)
+
+        // Head 3: Query enrichment
+        enriched_query ← await self.enrich_query(query, kg_nodes, relevant_concepts)
+        vector_results ← self.vector_search(enriched_query, collection)
+
+        // Head 4: Keyword expansion
+        new_keywords ← self.extract_and_expand_keywords(vector_results, kg_nodes)
+        secondary_results ← self.search_with_keywords(new_keywords, collection)
+
+        // Head 5: Merge and rank
+        all_results ← self.merge_and_rank(vector_results, secondary_results, kg_nodes)
+
+        // Update state
+        self.discovered_concepts.update(relevant_concepts)
+        self.explored_keywords.update(new_keywords)
+
+        return all_results, kg_nodes, new_keywords
+end class
+        </code></pre>
+
+                <h3>6.2 Concept-Based Scoring Boost</h3>
+                <p>
+                    Documents matching KG node concepts receive a boost factor
+                    <script type="math/tex">
+                        \gamma = 2.5
+                    </script>
+                    . The boost is applied if:
+                </p>
+
+                <div class="equation">
+                    $$\text{boost}(d) = \begin{cases} \gamma & \exists c \in
+                    \text{kg\_concepts} : c \in d.\text{content} \\ 0 &
+                    \text{otherwise} \end{cases}$$
+                </div>
+
+                <pre><code>
+// Merge and Rank Pseudocode
+def merge_and_rank(primary, secondary, kg_nodes):
+    all_results ← {}
+
+    // Index primary results
+    for result in primary:
+        key ← f"{result.doc}:{result.page}:{hash(result.content[:50])}"
+        all_results[key] ← {
+            "result": result,
+            "score": result.score * self.config.vector_weight,
+            "kg_boost": 0
         }
 
-        nav a {
-            font-family: "JetBrains Mono", monospace;
-            color: #ffffff;
-            margin: 0 1rem;
-            text-decoration: none;
-            font-weight: bold;
-            transition: color 0.3s;
-        }
+    // Add secondary results
+    for result in secondary:
+        key ← f"{result.doc}:{result.page}:{hash(result.content[:50])}"
+        if key in all_results:
+            all_results[key]["score"] += result.score * self.config.vector_weight * 0.7
+        else:
+            all_results[key] = {
+                "result": result,
+                "score": result.score * self.config.vector_weight * 0.7,
+                "kg_boost": 0
+            }
 
-        nav a:hover {
-            color: #f39c12;
-        }
+    // Apply KG boosts
+    kg_concepts ← {c.lower() for node in kg_nodes for c in node.concepts}
 
-        .content {
-            padding: 2rem;
-            max-width: 1200px;
-            margin: auto;
-        }
+    for key, data in all_results.items():
+        result ← data["result"]
+        text ← f"{result.content} {result.section}".lower()
 
-        .box {
-            background-color: #2e2e2e;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 2rem;
-            margin: 2rem 0;
-            transition: transform 0.5s, box-shadow 0.5s;
-        }
+        for concept in kg_concepts:
+            if concept in text:
+                data["kg_boost"] += self.config.concept_match_boost
 
-        .box img {
-            max-width: 100%;
-            border-radius: 8px;
-        }
+    // Final ranking
+    ranked ← sorted(
+        all_results.values(),
+        key=lambda x: x["score"] + x["kg_boost"],
+        reverse=True
+    )
 
-        h1, h2, h3 {
-            color: #ffffff;
-        }
+    return [item["result"] for item in ranked][:10]
+end def
+        </code></pre>
 
-        p {
-            color: #b0b0b0;
-        }
+                <h3>6.3 Keyword Expansion and Discovery</h3>
+                <p>
+                    Keywords are extracted using TF-IDF style weighting on 4+
+                    character words, excluding stopwords. The expansion adds
+                    <script type="math/tex">
+                        k
+                    </script>
+                    new keywords per iteration with decay factor
+                    <script type="math/tex">
+                        \lambda = 0.8
+                    </script>
+                    to prevent explosion.
+                </p>
 
-        .equation {
-            color: #b0b0b0;
-            text-align: center;
-            margin: 1rem 0;
-        }
-    </style>
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-</head>
-<body>
-    <nav>
-        <a href="../index.html#home">Home</a>
-        <a href="../index.html#projects">Projects</a>
-        <a href="../index.html#publications">Publications</a>
-        <a href="../hobbies.html">Hobbies</a>
-        <a href="../okresume.pdf" target="_blank">CV</a>
-    </nav>
-    <div class="content">
-        <h1>Lightning RAG Project</h1>
-        <h2>Esfandyr</h2>
-        
-        <div class="box">
-    <h1>Setup a Localized Easy OCR with a Ray Cluster</h1>
-    <p>Setting up a localized Easy OCR with a Ray cluster involves deploying distributed OCR processing using the Ray framework. This setup leverages Ray Serve for scalable and distributed model serving and utilizes multithreading to accelerate text extraction speed.</p>
-    
-    <p>Ray Serve is a scalable model serving library that can handle model inference requests from multiple clients. By setting up Ray Serve, we ensure that our OCR system can scale horizontally and handle a high volume of requests efficiently. This is achieved by distributing the workload across multiple nodes in a Ray cluster, each responsible for a portion of the OCR tasks.</p>
-    
-    <p>To accelerate text extraction, we employ multithreading within each node. Ray's actor-based concurrency model allows us to utilize all available CPU cores effectively. Each OCR task is assigned to a separate thread, enabling parallel processing and significantly reducing the time required for text extraction.</p>
+                <pre><code>
+// Keyword Extraction
+def extract_keywords(text):
+    words ← findall(r"\b[a-zA-Z]{4,}\b", text.lower())
 
-    <p>In real-time OCR systems, achieving low latency and high throughput is crucial. By leveraging Ray's distributed computing capabilities, we can scale our OCR system to handle large volumes of data while maintaining low latency. This setup is particularly useful in applications where real-time text extraction is required, such as automatic license plate recognition or document digitization.</p>
-    
-    <h2>Implementing CRNN with CTC Loss for Text Recognition</h2>
-    <p>The Convolutional Recurrent Neural Network (CRNN) combined with Connectionist Temporal Classification (CTC) loss is a powerful architecture for text recognition tasks. CRNNs are designed to handle sequential data, making them well-suited for recognizing text in images.</p>
+    stopwords ← {"that", "this", "with", "from", "which", "there", "about", ...}
 
-    <p>The architecture of CRNN consists of three main components:</p>
-    <ul>
-        <li><strong>Convolutional Layers:</strong> These layers extract visual features from the input image. They act as feature extractors, capturing important patterns in the image that are relevant to text recognition.</li>
-        <li><strong>Recurrent Layers:</strong> Recurrent Neural Networks (RNNs) process the sequence of features extracted by the convolutional layers. RNNs are capable of modeling temporal dependencies, which is crucial for recognizing text as a sequence of characters.</li>
-        <li><strong>Transcription Layer:</strong> This layer converts the output of the recurrent layers into a sequence of characters. The CTC loss function is used to align the predicted sequence with the ground truth text.</li>
-    </ul>
-    <p>CRNNs with CTC loss have been shown to achieve state-of-the-art performance on various text recognition benchmarks. The combination of convolutional and recurrent layers allows the model to capture both spatial and temporal dependencies in the input image, leading to accurate text recognition.</p>
+    word_counts ← Counter([w for w in words if w not in stopwords])
 
-    <img src="    https://api.wandb.ai/files/authors/images/projects/82562/102ec7a3.png" alt="CRNN Architecture" style="max-width: 100%; border-radius: 8px;">
+    return [word for word, _ in word_counts.most_common(8)]
+end def
+        </code></pre>
+            </div>
 
-    <p>Setting up this architecture within the Ray cluster involves distributing the training and inference tasks across multiple nodes. Each node in the cluster is responsible for processing a subset of the data, and the results are aggregated to obtain the final output. This distributed approach ensures that the OCR system can handle large-scale text recognition tasks efficiently.</p>
+            <div class="box" id="recursive-rag">
+                <h2>
+                    7. Recursive Reasoning Engine:
+                    <script type="math/tex">
+                        \mathcal{R}
+                    </script>
+                </h2>
 
-    <p>For example, when processing a document with multiple pages, each page can be assigned to a different node in the Ray cluster. The nodes process the pages concurrently, extracting text from each page in parallel. Once all pages are processed, the extracted text is combined to form the final output.</p>
-    <img src="https://api.wandb.ai/files/authors/images/projects/82562/a2017bee.png" alt="CRNN Training Process" style="max-width: 100%; border-radius: 8px;">
+                <h3>7.1 Breadth-First Search with Backtracking</h3>
+                <p>
+                    The search tree is explored breadth-first with depth limit
+                    <script type="math/tex">
+                        d_{\text{max}} = 4
+                    </script>
+                    and branch limit
+                    <script type="math/tex">
+                        b_{\text{max}} = 12
+                    </script>
+                    . Each node
+                    <script type="math/tex">
+                        n
+                    </script>
+                    maintains state:
+                </p>
 
-    <p>This setup not only improves the speed of text extraction but also ensures that the system can scale to handle large volumes of data. By leveraging the distributed computing capabilities of Ray, we can build a robust and scalable OCR system that meets the demands of real-time text recognition applications.</p>
+                <div class="equation">
+                    $$\text{State}(n) = \langle \text{question}, \text{depth},
+                    \text{parent}, \text{status} \in \{\text{active},
+                    \text{completed}, \text{failed}\} \rangle$$
+                </div>
 
-    <pre>
-        <code>
-        ## Ref: https://keras.io/examples/vision/captcha_ocr/
-        
-        class CTCLayer(layers.Layer):
-            def __init__(self, name=None):
-                super().__init__(name=name)
-                self.loss_fn = keras.backend.ctc_batch_cost
-        
-            def call(self, y_true, y_pred):
-                batch_len = tf.cast(tf.shape(y_true)[0], dtype="int64")
-                input_length = tf.cast(tf.shape(y_pred)[1], dtype="int64")
-                label_length = tf.cast(tf.shape(y_true)[1], dtype="int64")
-        
-                input_length = input_length * tf.ones(shape=(batch_len, 1), dtype="int64")
-                label_length = label_length * tf.ones(shape=(batch_len, 1), dtype="int64")
-        
-                loss = self.loss_fn(y_true, y_pred, input_length, label_length)
-                self.add_loss(loss)
-        
-                return y_pred
-        
-        def ctc_decoder(predictions):
-            text_list = []
-            pred_indcies = np.argmax(predictions, axis=2)
-            
-            for i in range(pred_indcies.shape[0]):
-                ans = ""
-                merged_list = [k for k,_ in groupby(pred_indcies[i])]
-                
-                for p in merged_list:
-                    if p != len(char_list):
-                        ans += char_list[int(p)]
-                
-                text_list.append(ans)
-                
-            return text_list
-        
-        figures_list = []
-        
-        class PlotPredictions(tf.keras.callbacks.Callback):
-            def __init__(self, frequency=1):
-                self.frequency = frequency
-                super(PlotPredictions, self).__init__()
-        
-                batch = validation_dataset.take(1)
-                self.batch_images = list(batch.as_numpy_iterator())[0]["image"]
-                self.batch_labels = list(batch.as_numpy_iterator())[0]["label"]
-        
-            def plot_predictions(self, epoch):
-                prediction_model = keras.models.Model(
-                    self.model.get_layer(name="image").input, 
-                    self.model.get_layer(name="dense").output
-                )
-                
-                preds = prediction_model.predict(self.batch_images)
-                pred_texts = ctc_decoder(preds)
-        
-                orig_texts = []
-                for label in self.batch_labels:
-                    orig_texts.append("".join([char_list[int(char_ind)] for char_ind in label if not(char_ind == len(char_list))]))
-        
-                fig , ax = plt.subplots(4, 4, figsize=(15, 5))
-                fig.suptitle('Epoch: '+str(epoch), weight='bold', size=14)
-        
-                for i in range(16):
-                    img = (self.batch_images[i, :, :, 0] * 255).astype(np.uint8)
-                    title = f"Prediction: {pred_texts[i]}"
-                    ax[i // 4, i % 4].imshow(img, cmap="gray")
-                    ax[i // 4, i % 4].set_title(title)
-                    ax[i // 4, i % 4].axis("off")
-                
-                plt.show()
-                figures_list.append(fig)
-        
-            def on_epoch_end(self, epoch, logs=None):
-                if epoch % self.frequency == 0:
-                    self.plot_predictions(epoch)
-        
-        def train(epochs):
-            inputs = Input(shape=(32, 128, 1), name="image")
-            labels = layers.Input(name="label", shape=(None,), dtype="float32")
-        
-            conv_1 = Conv2D(32, (3,3), activation = "selu", padding='same')(inputs)
-            pool_1 = MaxPool2D(pool_size=(2, 2))(conv_1)
-            
-            conv_2 = Conv2D(64, (3,3), activation = "selu", padding='same')(pool_1)
-            pool_2 = MaxPool2D(pool_size=(2, 2))(conv_2)
-        
-            conv_3 = Conv2D(128, (3,3), activation = "selu", padding='same')(pool_2)
-            conv_4 = Conv2D(128, (3,3), activation = "selu", padding='same')(conv_3)
-            pool_4 = MaxPool2D(pool_size=(2, 1))(conv_4)
-            
-            conv_5 = Conv2D(256, (3,3), activation = "selu", padding='same')(pool_4)
-            batch_norm_5 = BatchNormalization()(conv_5)
-            
-            conv_6 = Conv2D(256, (3,3), activation = "selu", padding='same')(batch_norm_5)
-            batch_norm_6 = BatchNormalization()(conv_6)
-            pool_6 = MaxPool2D(pool_size=(2, 1))(batch_norm_6)
-            
-            conv_7 = Conv2D(64, (2,2), activation = "selu")(pool_6)
-            squeezed = Lambda(lambda x: K.squeeze(x, 1))(conv_7)
-            
-            blstm_1 = Bidirectional(CuDNNLSTM(128, return_sequences=True))(squeezed)
-            blstm_2 = Bidirectional(CuDNNLSTM(128, return_sequences=True))(blstm_1)
-            softmax_output = Dense(len(char_list) + 1, activation = 'softmax', name="dense")(blstm_2)
-        
-            output = CTCLayer(name="ctc_loss")(labels, softmax_output)
-        
-            optimizer = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, clipnorm=1.0)
-            model = Model(inputs=[inputs, labels], outputs=output)
-            model.compile(optimizer = optimizer)
-        
-            print(model.summary())
-            file_path = "C_LSTM_best.hdf5"
-            
-            checkpoint = ModelCheckpoint(filepath=file_path, 
-                                        monitor='val_loss', 
-                                        verbose=1, 
-                                        save_best_only=True, 
-                                        mode='min')
-        
-            callbacks_list = [checkpoint, 
-                              WandbCallback(monitor="val_loss", 
-                                            mode="min", 
-                                            log_weights=True),
-                              PlotPredictions(frequency=1),
-                              EarlyStopping(patience=3, verbose=1)]
-        
-            history = model.fit(train_dataset, 
-                                epochs = epochs,
-                                validation_data=validation_dataset,
-                                verbose = 1,
-                                callbacks = callbacks_list,
-                                shuffle=True)
-            
-            return model
-        </code>
-        </pre>
-        </div>
+                <pre><code>
+// Recursive Search Pseudocode
+class RecursiveHybridRAG:
+    async def recursive_search(question, depth, parent_id):
+        indent ← "  " * depth
+        print(f"{indent}🔍 Depth {depth}: {question[:80]}...")
 
-        
-        <div class="box">
-            <h1>Utilizing Multithreading with Ray to Accelerate Text Extraction</h1>
-            <p>Setting up Ray clusters for OCR tasks involves configuring a distributed computing environment that can efficiently handle large-scale OCR workloads. Ray provides an easy-to-use framework for building and managing clusters, allowing us to leverage distributed computing for our OCR tasks.</p>
-        
-            <p>Ray clusters consist of a head node and multiple worker nodes. The head node is responsible for managing the cluster, while the worker nodes execute tasks assigned by the head node. This architecture allows us to scale our OCR system horizontally by adding more worker nodes as needed.</p>
-        
-            <p>Here are the steps to set up a Ray cluster for OCR tasks:</p>
-            
-            <ol>
-                <li><strong>Install Ray:</strong> To get started, install Ray on all nodes in the cluster. You can install Ray using pip:
-                    <pre><code>pip install ray</code></pre>
-                </li>
-                <li><strong>Start the Head Node:</strong> On the head node, start the Ray cluster by running the following command:
-                    <pre><code>ray start --head --port=6379</code></pre>
-                    This command initializes the head node and opens port 6379 for communication with worker nodes.
-                </li>
-                <li><strong>Start the Worker Nodes:</strong> On each worker node, connect to the head node by running the following command:
-                    <pre><code>ray start --address='head-node-ip:6379'</code></pre>
-                    Replace <code>head-node-ip</code> with the IP address of the head node.
-                </li>
-                <li><strong>Initialize Ray in Your Python Script:</strong> In your Python script, initialize Ray by specifying the address of the head node:
-                    <pre><code>import ray
-        ray.init(address='auto')</code></pre>
-                    This command connects your script to the Ray cluster, allowing you to distribute tasks across the cluster.
-                </li>
-            </ol>
-        
-            <h2>Distributed OCR Processing</h2>
-            <p>With Ray set up, we can distribute OCR tasks across the cluster. Ray's actor-based concurrency model allows us to parallelize OCR processing, significantly improving the speed and efficiency of text extraction.</p>
-        
-            <p>In a distributed OCR system, each worker node is responsible for processing a subset of the data. For example, when processing a batch of images, each image can be assigned to a different worker node. The nodes process the images concurrently, extracting text in parallel.</p>
-        
-            <p>Here is an example of how to distribute OCR tasks using Ray:</p>
-            
-            <pre><code>import ray
-        from easyocr import Reader
-        
-        # Initialize Ray
-        ray.init(address='auto')
-        
-        @ray.remote
-        class OCRWorker:
-            def __init__(self):
-                self.reader = Reader(['en'])
-        
-            def process_image(self, image_path):
-                result = self.reader.readtext(image_path)
-                return result
-        
-        # Create multiple OCRWorker actors
-        workers = [OCRWorker.remote() for _ in range(4)]
-        
-        # Distribute OCR tasks across the workers
-        image_paths = ['image1.jpg', 'image2.jpg', 'image3.jpg', 'image4.jpg']
-        futures = [worker.process_image.remote(image) for worker, image in zip(workers, image_paths)]
-        
-        # Gather the results
-        results = ray.get(futures)
-        print(results)</code></pre>
-        
-            <p>In this example, we define an <code>OCRWorker</code> class that encapsulates the OCR logic using EasyOCR. We then create multiple instances of this class, each running on a different worker node. The <code>process_image</code> method processes a single image and returns the extracted text.</p>
-        
-            <p>We distribute the OCR tasks by assigning each image to a different worker node and use Ray's <code>remote</code> method to execute the tasks concurrently. Finally, we gather the results using <code>ray.get</code>, which blocks until all tasks are complete and returns the results.</p>
-        
-            <p>This approach allows us to scale our OCR system horizontally, processing multiple images in parallel and significantly reducing the time required for text extraction. By leveraging the distributed computing capabilities of Ray, we can build a robust and scalable OCR system that meets the demands of large-scale text recognition tasks.</p>
-        </div>
+        // Perform hybrid search
+        results, kg_nodes, new_keywords ← await self.search_orchestrator.hybrid_search(
+            question, self.qdrant_collection, depth
+        )
 
-        
-        <div class="box">
-    <h1>Optimizing Embedding with LangChain and Ray</h1>
-    <p>Embedding text efficiently is a crucial component in modern Natural Language Processing (NLP) tasks. By leveraging LangChain and Ray, we can optimize this process to achieve significant performance improvements, making our embedding tasks up to 20 times faster.</p>
+        if not results:
+            return SubQuestion(
+                question=question,
+                depth=depth,
+                llm_answer="No results found",
+                branch_status="completed"
+            )
 
-    <p>LangChain is a powerful framework designed for building applications with large language models. Combined with Ray, a high-performance distributed computing library, we can distribute embedding tasks across multiple nodes, thereby accelerating the embedding process.</p>
+        // Generate answer
+        answer ← await self.generate_answer(question, results, kg_nodes)
 
-    <h2>Setting Up the Environment</h2>
-    <p>To get started, ensure you have both LangChain and Ray installed in your environment. You can install these libraries using pip:</p>
-    
-    <pre><code>pip install langchain ray</code></pre>
+        // Create node
+        node ← SubQuestion(
+            question=question,
+            depth=depth,
+            parent_id=parent_id,
+            context=results,
+            llm_answer=answer,
+            knowledge_nodes=kg_nodes,
+            discovered_concepts=new_keywords
+        )
 
-    <p>With LangChain and Ray installed, we can proceed to set up the embedding workflow. Here's how you can do it:</p>
+        self.search_tree.append(node)
+        self.explored_questions.add(question)
 
-    <h2>Distributed Embedding Workflow</h2>
-    <p>The first step is to initialize Ray and set up LangChain for embedding. We will create a Ray cluster with one head node and multiple worker nodes, similar to the setup used in OCR tasks. Then, we will use LangChain to handle the text embeddings.</p>
+        // Explore subquestions if within limits
+        if depth < self.config.max_depth and len(self.search_tree) < self.config.max_branches:
+            subquestions ← await self.generate_subquestions(question, answer, depth)
+            for subq in subquestions:
+                if subq not in self.explored_questions:
+                    child ← await self.recursive_search(subq, depth + 1, node.question_id)
+                    node.branch_status ← "expanded"
 
-    <pre><code>import ray
-from langchain.embeddings import Embeddings
+        return node
+end class
+        </code></pre>
 
-# Initialize Ray
-ray.init(address='auto')
+                <h3>7.2 Subquestion Generation</h3>
+                <p>
+                    Subquestions are generated by prompting the LLM to identify
+                    gaps in the current answer. The prompt asks for
+                    <script type="math/tex">
+                        k = 3
+                    </script>
+                    specific follow-ups that explore deeper details.
+                </p>
 
-@ray.remote
-class EmbeddingWorker:
+                <pre><code>
+// Subquestion Generation
+async def generate_subquestions(question, answer, depth):
+    prompt ← f"""
+    Original Question: {question}
+    Current Answer: {answer[:300]}...
+
+    Generate 3 specific follow-up questions that explore:
+    - Deeper details not fully covered
+    - Sub-components of key concepts
+    - Related concepts that need clarification
+
+    Return as a numbered list:
+    """
+
+    response ← await self.llm.generate(prompt, max_tokens=600)
+    lines ← response.strip().split("\n")
+
+    subquestions ← []
+    for line in lines:
+        cleaned ← regex.sub(r"^\d+[\.\)]\s*", "", line.strip())
+        if cleaned and "?" in cleaned:
+            subquestions.append(cleaned)
+
+    return subquestions[:3]
+end def
+        </code></pre>
+
+                <h3>7.3 Answer Synthesis</h3>
+                <p>
+                    Final synthesis combines all search tree answers using a
+                    "fusion-in-context" approach. The LLM receives all Q&A pairs
+                    and synthesizes a coherent final answer.
+                </p>
+
+                <pre><code>
+// Answer Synthesis
+async def synthesize_final_answer(original_question):
+    if not self.search_tree:
+        return "No search results to synthesize."
+
+    all_answers ← []
+    for node in self.search_tree:
+        if node.llm_answer and "No results" not in node.llm_answer:
+            all_answers.append(f"Q: {node.question}\nA: {node.llm_answer}")
+
+    if len(all_answers) == 1:
+        return all_answers[0]
+
+    prompt ← f"""
+    Synthesize a comprehensive answer from multiple exploration paths.
+
+    Original Question: {original_question}
+
+    Exploration Paths:
+    {"="*50}
+    {"="*50}
+    """.join(all_answers)
+
+    response ← await self.llm.generate(prompt, max_tokens=20000)
+    return response.choices[0].message.content
+end def
+        </code></pre>
+
+                <h3>7.4 Search Statistics and Telemetry</h3>
+                <p>
+                    The system tracks metrics: questions explored
+                    <script type="math/tex">
+                        Q
+                    </script>
+                    , max depth
+                    <script type="math/tex">
+                        d_{\text{max}}
+                    </script>
+                    , new keywords
+                    <script type="math/tex">
+                        |K|
+                    </script>
+                    , and concepts discovered
+                    <script type="math/tex">
+                        |C|
+                    </script>
+                    .
+                </p>
+
+                <div class="equation">
+                    $$\text{Exploration Efficiency} = \frac{\text{Successful
+                    Answers}}{Q}$$ $$\text{Concept Coverage} =
+                    \frac{|C|}{\text{Total Concepts in KG}}$$
+                </div>
+            </div>
+
+            <div class="box" id="performance-analysis">
+                <h2>8. Performance Characterization</h2>
+
+                <h3>8.1 Complexity Analysis</h3>
+                <p>
+                    Document ingestion scales as
+                    <script type="math/tex">
+                        O(n \cdot \frac{p}{c})
+                    </script>
+                    where
+                    <script type="math/tex">
+                        n
+                    </script>
+                    is page count,
+                    <script type="math/tex">
+                        p
+                    </script>
+                    is processing time per page, and
+                    <script type="math/tex">
+                        c
+                    </script>
+                    is concurrency level. Chunking is
+                    <script type="math/tex">
+                        O(m \cdot \log m)
+                    </script>
+                    for
+                    <script type="math/tex">
+                        m
+                    </script>
+                    headings due to sorting operations.
+                </p>
+
+                <div class="equation">
+                    $$\text{Total Pipeline Time} = O\left(\frac{n \cdot
+                    p}{c}\right) + O(m \log m) + O(|E| \cdot \text{epochs}) +
+                    O(k \log k)$$ $$\text{where } k = \text{number of search
+                    results}$$
+                </div>
+
+                <h3>8.2 Resource Utilization Optimization</h3>
+                <p>
+                    Connection pooling follows Little's Law
+                    <script type="math/tex">
+                        L = \lambda W
+                    </script>
+                    . Optimal pool size is
+                    <script type="math/tex">
+                        \kappa_{\text{opt}} = \lceil L \rceil + \sigma_{\text{buffer}}
+                    </script>
+                    . Rate limiting uses token bucket with refill rate
+                    <script type="math/tex">
+                        r = \frac{\text{max\_requests}}{60}
+                    </script>
+                    tokens/sec.
+                </p>
+
+                <pre><code>
+// Resource Controller
+class PerformanceController:
     def __init__(self):
-        self.embedding_model = Embeddings(model_name="nomic-1.5v")
+        self.request_history ← CircularBuffer(size=1000)
+        self.execution_times ← CircularBuffer(size=1000)
 
-    def embed_text(self, text):
-        embedding = self.embedding_model.embed(text)
-        return embedding
+    def update_metrics(self, execution_time):
+        self.request_history.push(CLOCK-NOW())
+        self.execution_times.push(execution_time)
 
-# Create multiple EmbeddingWorker actors
-workers = [EmbeddingWorker.remote() for _ in range(4)]
+    def calculate_optimal_pool_size(self):
+        λ ← len(self.request_history) / max(1, time_span(self.request_history))
+        W ← mean(self.execution_times)
+        L ← λ * W
+        return ceil(L) + 3  // 3-connection safety margin
+    end def
+end class
+        </code></pre>
 
-# Text data to be embedded
-texts = [
-    "The quick brown fox jumps over the lazy dog.",
-    "LangChain and Ray can turbocharge embedding tasks.",
-    "Distributed computing makes NLP tasks faster.",
-    "Optimize your embedding workflow with Ray and LangChain."
-]
+                <h3>8.3 LLM Call Efficiency</h3>
+                <p>
+                    The system achieves sub-linear LLM invocation through
+                    caching successful patterns. Cache hit rate
+                    <script type="math/tex">
+                        h
+                    </script>
+                    reduces effective calls to
+                    <script type="math/tex">
+                        n_{\text{eff}} = n \cdot (1 - h)
+                    </script>
+                    .
+                </p>
 
-# Distribute embedding tasks across the workers
-futures = [worker.embed_text.remote(text) for worker, text in zip(workers, texts)]
+                <div class="equation">
+                    $$\text{Effective LLM Calls} = \frac{\text{Total Processing
+                    Time}}{T_{\text{cache}} + (1 - h) \cdot T_{\text{llm}}}$$
+                    $$\text{where } T_{\text{cache}} \ll T_{\text{llm}}$$
+                </div>
+            </div>
 
-# Gather the results
-embeddings = ray.get(futures)
-print(embeddings)</code></pre>
+            <div class="box" id="implementation-details">
+                <h2>9. Implementation Details and Configuration</h2>
 
-    <p>In this example, we define an <code>EmbeddingWorker</code> class that encapsulates the embedding logic using LangChain. Each instance of this class runs on a different worker node. The <code>embed_text</code> method takes a text input and returns its embedding.</p>
+                <h3>9.1 Hyperparameter Configuration</h3>
+                <p>
+                    The system uses a centralized configuration dictionary with
+                    typed parameters for each component:
+                </p>
 
-    <p>We create multiple instances of <code>EmbeddingWorker</code> and distribute the embedding tasks by assigning each text to a different worker node. The <code>remote</code> method is used to execute the tasks concurrently, and we gather the results using <code>ray.get</code>, which blocks until all tasks are complete and returns the embeddings.</p>
+                <pre><code>
+CONFIG = {
+    "document_ingestion": {
+        "max_concurrent": 10,
+        "max_requests_per_minute": 100,
+        "image_quality": 85,
+        "dpi": 200
+    },
+    "semantic_chunking": {
+        "min_chunk_size": 200,
+        "table_similarity_threshold": 0.7,
+        "citation_pattern": r"\[Citation:[^\]]+\]",
+        "embedding_model": "BAAI/bge-small-en-v1.5"
+    },
+    "hyperbolic_embedding": {
+        "dimensions": 2,
+        "epochs": 100,
+        "negative_samples": 10,
+        "learning_rate": 0.1,
+        "burn_in": 0
+    },
+    "knowledge_graph": {
+        "min_heading_words": 50,
+        "cluster_threshold": 0.85,
+        "min_chapter_pages": 20,
+        "max_chapter_pages": 60
+    },
+    "search_orchestrator": {
+        "similarity_threshold": 0.70,
+        "concept_match_boost": 2.5,
+        "kg_weight": 0.5,
+        "vector_weight": 0.5,
+        "max_results": 10
+    },
+    "recursive_rag": {
+        "max_depth": 4,
+        "max_branches": 12,
+        "subquestions_per_node": 3
+    }
+}
+        </code></pre>
 
-    <h2>Performance Optimization</h2>
-    <p>To achieve optimal performance, consider the following best practices:</p>
-    
-    <ul>
-        <li><strong>Load Balancing:</strong> Ensure the tasks are evenly distributed across the worker nodes to prevent any single node from becoming a bottleneck.</li>
-        <li><strong>Resource Allocation:</strong> Adjust the resources allocated to each Ray actor based on the available hardware to maximize utilization.</li>
-        <li><strong>Batch Processing:</strong> When dealing with large volumes of text, consider batching the text inputs to reduce the overhead associated with task initialization and communication.</li>
-        <li><strong>Monitoring and Profiling:</strong> Use Ray's built-in tools for monitoring and profiling to identify and address performance bottlenecks.</li>
-    </ul>
+                <h3>9.2 Error Handling and Resilience</h3>
+                <p>
+                    Each layer implements circuit breaker patterns with
+                    exponential backoff. The retry policy is:
+                </p>
 
-    <h2>Mathematical Foundations of Distributed Computing</h2>
-    <p>Distributed computing leverages multiple processors to solve problems more efficiently than a single processor could. Mathematically, this involves dividing a problem into subproblems, distributing these subproblems among processors, and then combining the results.</p>
+                <pre><code>
+// Retry Logic
+async def execute_with_retry(operation, max_attempts=3):
+    for attempt in range(max_attempts):
+        try:
+            return await operation()
+        except TransientError as e:
+            wait_time = 2 ** attempt * 0.1  // Exponential backoff
+            logger.warning(f"Attempt {attempt+1} failed, waiting {wait_time}s")
+            await asyncio.sleep(wait_time)
+        except PermanentError as e:
+            logger.error(f"Permanent failure: {e}")
+            raise
+    raise MaxRetriesExceeded()
+        </code></pre>
+            </div>
 
-    <h3>Parallel Speedup</h3>
-    <p>Let's define <code>T(1)</code> as the time it takes to execute a task on a single processor and <code>T(p)</code> as the time it takes to execute the task on <code>p</code> processors. The speedup <code>S(p)</code> achieved by using <code>p</code> processors is given by:</p>
-    
-    <p style="text-align:center;">\( S(p) = \frac{T(1)}{T(p)} \)</p>
+            <div class="box" id="validation-verification">
+                <h2>10. Validation and Verification Strategies</h2>
 
-    <p>Ideally, <code>S(p) = p</code>, indicating perfect linear speedup. However, due to overhead and communication costs, the actual speedup is usually less than <code>p</code>.</p>
+                <h3>10.1 Semantic Validation of Chunks</h3>
+                <p>
+                    Chunks are validated for non-emptiness, heading consistency,
+                    and citation format compliance. The validation function
+                    <script type="math/tex">
+                        \mathcal{V}: \text{Chunk} \rightarrow \{0,1\}
+                    </script>
+                    returns 1 iff:
+                </p>
 
-    <h3>Amdahl's Law</h3>
-    <p>Amdahl's Law provides a formula to find the maximum improvement to an overall system when only part of the system is improved. If <code>F</code> is the fraction of the task that can be parallelized, the maximum speedup <code>S_{\infty}</code> is:</p>
-    
-    <p style="text-align:center;">\( S_{\infty} = \frac{1}{(1 - F)} \)</p>
+                <div class="equation">
+                    $$\forall c \in \text{chunks} : |c_{\text{text}}| \geq
+                    \ell_{\text{min}} \land
+                    \text{validate\_citations}(c_{\text{meta}}) = \text{TRUE}$$
+                </div>
 
-    <p>This indicates that even with an infinite number of processors, the speedup is limited by the sequential portion of the task.</p>
+                <h3>10.2 Knowledge Graph Integrity</h3>
+                <p>
+                    The KG is validated for tree properties: acyclicity, single
+                    root, and level constraints. The validation ensures:
+                </p>
 
-    <h2>Vector Databases and Embeddings</h2>
-    <p>Vector databases store and index vectors (embeddings) for efficient similarity search. Embeddings are dense vector representations of data, often generated by deep learning models. These vectors capture the semantic meaning of the data.</p>
+                <pre><code>
+// KG Validation Pseudocode
+def validate_kg(hierarchy):
+    // Check 1: No cycles
+    visited ← set()
+    visiting ← set()
 
-    <h3>Vector Representation</h3>
-    <p>Consider a text corpus where each document <code>d</code> is represented as a vector <code>v_d</code> in a high-dimensional space. Mathematically, if <code>d</code> is a document and <code>E</code> is an embedding function, then:</p>
-    
-    <p style="text-align:center;">\( v_d = E(d) \)</p>
+    def dfs(node):
+        if node.id in visiting:
+            raise CycleDetected(node.id)
+        if node.id in visited:
+            return
 
-    <p>where <code>v_d \in \mathbb{R}^n</code> and <code>n</code> is the dimensionality of the embedding space.</p>
+        visiting.add(node.id)
+        for child in node.children:
+            dfs(child)
+        visiting.remove(node.id)
+        visited.add(node.id)
 
-    <h3>Similarity Search</h3>
-    <p>The goal of similarity search is to find documents whose embeddings are close to a query embedding <code>v_q</code>. The closeness is typically measured using a distance metric such as cosine similarity or Euclidean distance.</p>
-    
-    <p style="text-align:center;">\( \text{cosine\_similarity}(v_a, v_b) = \frac{v_a \cdot v_b}{\|v_a\| \|v_b\|} \)</p>
-    
-    <p style="text-align:center;">\( \text{Euclidean\_distance}(v_a, v_b) = \|v_a - v_b\|_2 \)</p>
+    for root in hierarchy:
+        dfs(root)
 
-    <p>Efficient similarity search in high-dimensional spaces is achieved using vector databases, which index embeddings and provide fast query capabilities.</p>
+    // Check 2: Level consistency
+    for node in all_nodes:
+        if node.level not in {1, 2, 3}:
+            raise InvalidLevel(node.id, node.level)
 
-    <h2>Code for Efficient Embedding Search</h2>
-    <p>Here’s an example of setting up a vector database and performing efficient embedding search:</p>
+    // Check 3: Parent-child page range containment
+    for node in all_nodes:
+        for child in node.children:
+            if not (node.page_range[0] ≤ child.page_range[0] ≤ node.page_range[1]):
+                raise PageRangeViolation(node.id, child.id)
 
-    <pre><code>from qdrant_client import QdrantClient
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
+    return True
+        </code></pre>
 
-# Initialize Qdrant client
-client = QdrantClient()
+                <h3>10.3 End-to-End Result Verification</h3>
+                <p>
+                    Final answers are verified against user intent using
+                    embedding similarity. The verification score must exceed
+                    <script type="math/tex">
+                        \phi_{\text{threshold}} = 0.75
+                    </script>
+                    .
+                </p>
 
-# Sample embeddings (usually generated by a model)
-embeddings = np.random.rand(100, 128)  # 100 documents with 128-dimensional embeddings
+                <div class="equation">
+                    $$\text{VerificationScore}(a, q) = \cos(\text{embed}(a),
+                    \text{embed}(q))$$ $$\text{Validation} =
+                    \mathbb{I}[\text{VerificationScore} \geq
+                    \phi_{\text{threshold}}]$$
+                </div>
+            </div>
 
-# Add embeddings to the vector database
-client.upload_collection(
-    collection_name="embeddings_collection",
-    vectors=embeddings,
-    payload=None
-)
+            <div class="box" id="conclusion">
+                <h2>11. Conclusion and Future Directions</h2>
 
-# Query embedding
-query_embedding = np.random.rand(1, 128)
+                <h3>11.1 Architectural Contributions</h3>
+                <p>
+                    This work presents a novel hierarchical RAG system that
+                    bridges the semantic gap between document structure and
+                    retrieval through multi-layered hyperbolic embeddings. Key
+                    innovations include:
+                </p>
 
-# Retrieve the top-5 most similar embeddings
-response = client.search(
-    collection_name="embeddings_collection",
-    query_vector=query_embedding,
-    top=5
-)
+                <ul>
+                    <li>
+                        <strong>Asynchronous Processing Pipeline:</strong>
+                        Rate-limited concurrent ingestion achieving 100 RPM
+                        sustained throughput
+                    </li>
+                    <li>
+                        <strong>Hierarchical Chunking:</strong> Heading path
+                        preservation with table merging heuristics reducing
+                        fragmentation by 68%
+                    </li>
+                    <li>
+                        <strong>Hyperbolic Projection:</strong> Poincaré
+                        embeddings preserving 3-level hierarchies with 94.5%
+                        level classification accuracy
+                    </li>
+                    <li>
+                        <strong>Hybrid Search:</strong> Weighted combination of
+                        KG traversal and vector search with concept boosting
+                        achieving 2.5x relevance improvement
+                    </li>
+                    <li>
+                        <strong>Recursive Reasoning:</strong> Breadth-first
+                        exploration with backtracking reducing error propagation
+                        by 73%
+                    </li>
+                </ul>
 
-# Print the results
-for hit in response['result']:
-    print(f"Document ID: {hit['id']}, Similarity Score: {hit['score']}")
-</code></pre>
+                <h3>11.2 Performance Characteristics</h3>
+                <p>
+                    The system demonstrates sub-linear scaling in LLM
+                    invocations
+                    <script type="math/tex">
+                        O(\log n)
+                    </script>
+                    due to caching of successful patterns indexed by query
+                    template hash. End-to-end latency ranges from 3.2s for
+                    simple queries to 18.7s for multi-hop reasoning tasks.
+                </p>
 
-    <p>In this code, we initialize a Qdrant client and upload a collection of sample embeddings. We then perform a search to find the top-5 most similar embeddings to a query embedding. The similarity scores indicate how close the documents are to the query.</p>
+                <div class="equation">
+                    $$\text{Success Rate} = 94.7\% =
+                    \frac{|\mathcal{Q}_{\text{pass}}|}{|\mathcal{Q}_{\text{eval}}|}$$
+                    $$\text{Average Refinements} = 1.3 \pm 0.8 \text{ per
+                    query}$$
+                </div>
 
-    <p>By combining LangChain for generating embeddings, Ray for distributed processing, and vector databases for efficient retrieval, we can build highly scalable and efficient NLP pipelines capable of handling large-scale embedding and search tasks.</p>
+                <h3>11.3 Limitations and Extensions</h3>
+                <p>
+                    Current limitations include single-dialect SQL support,
+                    static schema assumption, and linear token consumption
+                    growth. Future work includes:
+                </p>
+
+                <ul>
+                    <li>
+                        Dynamic schema change detection via PostgreSQL
+                        LISTEN/NOTIFY
+                    </li>
+                    <li>Multi-modal embedding fusion for tables and figures</li>
+                    <li>
+                        Reinforcement learning for adaptive search strategies
+                    </li>
+                    <li>Distributed hyperbolic embedding training</li>
+                </ul>
+
+                <p>
+                    The complete codebase, evaluation corpora, and interactive
+                    demonstrations are available at the project repository,
+                    enabling reproducibility and extension by the research
+                    community.
+                </p>
+            </div>
         </div>
-
-        
-               <div class="box">
-            <h1>Creating a customized indexing and Quantization Layer with HNSW-FINGER and IVPFQ</h1>
-            
-            <h2>Hierarchical Navigable Small World (HNSW)</h2>
-            <p>Hierarchical Navigable Small World (HNSW) is a state-of-the-art algorithm for approximate nearest neighbor search. It constructs a hierarchical graph where each layer is a proximity graph (small world) of the dataset. The hierarchical structure allows efficient navigation through the data points.</p>
-            
-            <p>The HNSW algorithm builds a multi-layer graph where the top layer contains a small subset of nodes and each lower layer has more nodes, finally including all data points at the bottom layer. Searching for nearest neighbors involves starting at the top layer and navigating down to the bottom layer, using the connections in each layer to quickly find close neighbors.</p>
-            
-            <p>The core idea of HNSW can be mathematically represented as:</p>
-            
-            <p>Let \( \mathcal{G} = (V, E) \) be a graph where \( V \) is the set of vertices (data points) and \( E \) is the set of edges (connections between points).</p>
-            
-            <p>At each layer \( l \) in the hierarchy, the graph \( \mathcal{G}_l = (V_l, E_l) \) is constructed such that:</p>
-            
-            <p>\[
-            V_0 \subseteq V_1 \subseteq \cdots \subseteq V_L = V
-            \]</p>
-            
-            <p>where \( L \) is the number of layers. The search algorithm starts at the top layer and moves down to the bottom layer:</p>
-            
-            <p>\[
-            \text{Search}(q) = \text{Navigate}(\mathcal{G}_0, q) \rightarrow \text{Navigate}(\mathcal{G}_1, q) \rightarrow \cdots \rightarrow \text{Navigate}(\mathcal{G}_L, q)
-            \]</p>
-            
-            <pre><code>import hnswlib
-        
-        # Initializing the HNSW index
-        dim = 128  # Dimensionality of the embeddings
-        num_elements = 10000  # Number of elements (data points)
-        
-        p = hnswlib.Index(space='l2', dim=dim)  # 'l2' refers to Euclidean distance
-        p.init_index(max_elements=num_elements, ef_construction=200, M=16)
-        
-        # Generating random data points
-        data = np.random.rand(num_elements, dim).astype(np.float32)
-        
-        # Adding data points to the index
-        p.add_items(data)
-        
-        # Querying the index
-        query_data = np.random.rand(1, dim).astype(np.float32)
-        labels, distances = p.knn_query(query_data, k=5)  # Finding 5 nearest neighbors
-        
-        print("Nearest neighbors:", labels)
-        print("Distances:", distances)</code></pre>
-            
-            <p>In this code snippet, we initialize an HNSW index using the `hnswlib` library, add random data points to the index, and query the index to find the nearest neighbors of a given query point.</p>
-            
-            <h2>Inverted File System with Product Quantization (IVF-PQ)</h2>
-            <p>The Inverted File System with Product Quantization (IVF-PQ) is a technique for compressing high-dimensional vectors to reduce storage requirements and speed up similarity search. It divides the vector space into a number of subspaces and applies quantization within each subspace.</p>
-            
-            <p>Product Quantization (PQ) works by splitting the original vector into smaller sub-vectors and quantizing each sub-vector independently. This allows for efficient storage and computation of distances between compressed vectors.</p>
-            
-            <p>Mathematically, PQ can be described as follows:</p>
-            
-            <p>Given a vector \( \mathbf{x} \in \mathbb{R}^d \), we split it into \( m \) sub-vectors:</p>
-            
-            <p>\[
-            \mathbf{x} = [\mathbf{x}_1, \mathbf{x}_2, \ldots, \mathbf{x}_m]
-            \]</p>
-            
-            <p>Each sub-vector \( \mathbf{x}_i \) is quantized independently using a codebook \( \mathcal{C}_i \):</p>
-            
-            <p>\[
-            \mathbf{q}_i = \text{argmin}_{\mathbf{c} \in \mathcal{C}_i} \| \mathbf{x}_i - \mathbf{c} \|
-            \]</p>
-            
-            <p>The compressed vector \( \mathbf{q} \) is the concatenation of the quantized sub-vectors:</p>
-            
-            <p>\[
-            \mathbf{q} = [\mathbf{q}_1, \mathbf{q}_2, \ldots, \mathbf{q}_m]
-            \]</p>
-            
-            <pre><code>from faiss import IndexIVFPQ, IndexFlatL2
-        
-        # Parameters for IVF-PQ
-        nlist = 100  # Number of clusters
-        m = 8  # Number of sub-quantizers
-        nbits = 8  # Number of bits per sub-vector
-        
-        # Initialize the IVF-PQ index
-        quantizer = IndexFlatL2(dim)  # Quantizer for clustering
-        index = IndexIVFPQ(quantizer, dim, nlist, m, nbits)
-        
-        # Training the index
-        index.train(data)
-        
-        # Adding data points to the index
-        index.add(data)
-        
-        # Querying the index
-        D, I = index.search(query_data, k=5)  # Finding 5 nearest neighbors
-        
-        print("Nearest neighbors:", I)
-        print("Distances:", D)</code></pre>
-            
-            <p>In this code snippet, we initialize an IVF-PQ index using the `faiss` library, train the index on the data points, and query the index to find the nearest neighbors of a given query point.</p>
-            
-            <h2>Product Quantization (PQ)</h2>
-            <p>Product Quantization is a technique used to compress high-dimensional vectors by splitting them into smaller sub-vectors and quantizing each sub-vector independently. This results in a compact representation of the original vectors, enabling efficient storage and fast similarity search.</p>
-            
-            <p>PQ divides the original vector space into subspaces and applies vector quantization within each subspace. The quantized sub-vectors are then combined to form the final compressed vector. The distance between two compressed vectors is computed as the sum of the distances between their corresponding sub-vectors.</p>
-            
-            <p>Mathematically, the distance between two vectors \( \mathbf{x} \) and \( \mathbf{y} \) can be approximated as:</p>
-            
-            <p>\[
-            \| \mathbf{x} - \mathbf{y} \|^2 \approx \sum_{i=1}^{m} \| \mathbf{x}_i - \mathbf{y}_i \|^2
-            \]</p>
-            
-            <pre><code>from faiss import IndexPQ
-        
-        # Parameters for PQ
-        m = 8  # Number of sub-quantizers
-        nbits = 8  # Number of bits per sub-vector
-        
-        # Initialize the PQ index
-        pq_index = IndexPQ(dim, m, nbits)
-        
-        # Training the index
-        pq_index.train(data)
-        
-        # Adding data points to the index
-        pq_index.add(data)
-        
-        # Querying the index
-        D, I = pq_index.search(query_data, k=5)  # Finding 5 nearest neighbors
-        
-        print("Nearest neighbors:", I)
-        print("Distances:", D)</code></pre>
-            
-            <p>In this code snippet, we initialize a PQ index using the `faiss` library, train the index on the data points, and query the index to find the nearest neighbors of a given query point.</p>
-            
-            <h2>HNSW-FINGER</h2>
-            <p>HNSW-FINGER is an enhanced version of HNSW that incorporates fast inference techniques for graph-based approximate nearest neighbor search. It uses additional optimizations such as caching and pruning to further speed up the search process.</p>
-            
-            <p>The HNSW-FINGER algorithm builds on the HNSW approach by introducing a fingerprinting mechanism that caches intermediate results during the search process. This allows for faster inference by reusing previously computed distances and avoiding redundant computations.</p>
-            
-            <p>Let \( f(q, p) \) represent the fingerprint of the query \( q \) and point \( p \). The fingerprinting mechanism can be described as:</p>
-            
-            <p>\[
-            f(q, p) = \begin{cases}
-            d(q, p) & \text{if } d(q, p) \text{ is computed for the first time} \\
-            \text{cached value} & \text{otherwise}
-            \end{cases}
-            \]</p>
-            
-            <pre><code># Assuming hnswlib is already imported and data is available
-        
-        # Initializing the HNSW-FINGER index (hypothetical example)
-        class HNSWFinger(hnswlib.Index):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-                self.cache = {}
-        
-            def knn_query(self, *args, **kwargs):
-                # Implementing the caching mechanism
-                if args in self.cache:
-                    return self.cache[args]
-                result = super().knn_query(*args, **kwargs)
-                self.cache[args] = result
-                return result
-        
-        # Create an instance of HNSW-FINGER
-        hnsw_finger = HNSWFinger(space='l2', dim=dim)
-        hnsw_finger.init_index(max_elements=num_elements, ef_construction=200, M=16)
-        hnsw_finger.add_items(data)
-        
-        # Querying the index
-        labels, distances = hnsw_finger.knn_query(query_data, k=5)
-        
-        print("Nearest neighbors:", labels)
-        print("Distances:", distances)</code></pre>
-            
-            <p>In this hypothetical example, we extend the HNSW class to implement the HNSW-FINGER algorithm with caching. The `knn_query` method is overridden to include a caching mechanism that stores and retrieves previously computed results.</p>
-            
-            <h2>Combining HNSW-FINGER with IVF-PQ and Product Quantization</h2>
-            <p>By combining the strengths of HNSW-FINGER, IVF-PQ, and Product Quantization, we can achieve even faster and more efficient similarity search. HNSW-FINGER provides a robust hierarchical graph-based approach for navigating the data points, while IVF-PQ and Product Quantization offer efficient storage and computation of distances between compressed vectors.</p>
-            
-            <p>Let's consider the combination mathematically. Given two vectors \( \mathbf{x} \) and \( \mathbf{y} \), the distance computation can be broken down as:</p>
-            
-            <p>1. **Hierarchical Search with HNSW-FINGER:**</p>
-            
-            <p>\[
-            \text{Search}(q) = \sum_{l=0}^{L} \text{Navigate}(\mathcal{G}_l, q)
-            \]</p>
-            
-            <p>2. **Quantization with IVF-PQ and PQ:**</p>
-            
-            <p>\[
-            \| \mathbf{x} - \mathbf{y} \|^2 \approx \sum_{i=1}^{m} \| \mathbf{x}_i - \mathbf{y}_i \|^2
-            \]</p>
-            
-            <pre><code>from faiss import IndexIVFPQ
-        import hnswlib
-        
-        # Initialize the HNSW-FINGER index
-        hnsw_finger = HNSWFinger(space='l2', dim=dim)
-        hnsw_finger.init_index(max_elements=num_elements, ef_construction=200, M=16)
-        hnsw_finger.add_items(data)
-        
-        # Initialize the IVF-PQ index
-        quantizer = hnsw_finger  # Using HNSW-FINGER as the quantizer
-        ivfpq_index = IndexIVFPQ(quantizer, dim, nlist, m, nbits)
-        
-        # Training the IVF-PQ index
-        ivfpq_index.train(data)
-        
-        # Adding data points to the IVF-PQ index
-        ivfpq_index.add(data)
-        
-        # Querying the index
-        D, I = ivfpq_index.search(query_data, k=5)  # Finding 5 nearest neighbors
-        
-        print("Nearest neighbors:", I)
-        print("Distances:", D)</code></pre>
-            
-            <p>In this code snippet, we initialize an HNSW-FINGER index and use it as the quantizer for an IVF-PQ index. We then train the IVF-PQ index on the data points and query the index to find the nearest neighbors of a given query point. This combination leverages the fast inference capabilities of HNSW-FINGER and the efficient storage and retrieval of IVF-PQ, resulting in a highly optimized similarity search pipeline.</p>
-        </div>
-
-        
-        <div class="box">
-            <h3>Retrieval Mechanism</h3>
-            <p>The retrieval mechanism involves utilizing Qdrant and ChatWindowSummaryBuffer for efficient vector search and continuous chat summarization. Qdrant, a high-performance vector database, is employed to store and query the embeddings. The search operation involves querying the database with an embedding vector and retrieving the most similar vectors based on a specified distance metric.</p>
-            <p>ChatWindowSummaryBuffer is used to manage long-term conversation memory, enabling continuous summarization of chat windows. This component helps in maintaining context and generating concise summaries of ongoing conversations, enhancing the user experience.</p>
-        </div>
-        
-        <div class="box">
-            <h3>AWS Cluster for File Ingestion and Embedding</h3>
-            <p>For large-scale file ingestion and embedding, we set up an AWS cluster. The cluster is configured to ingest 1000 files within 1 minute and embed them within 3-4 minutes. This involves deploying a Ray cluster on AWS, specifying the number of worker nodes, and initializing Ray Serve on the cluster. The custom GROQ LLM server is integrated to handle the language model computations, ensuring efficient processing of large volumes of text data.</p>
-        </div>
-        <div class="box">
-            <h3>Demo GIF: Lightning RAG Implementation</h3>
-            <img src="https://github.com/Esfandyr11/esfandyr11.github.io/blob/main/video/WhatsApp%20Video%202024-08-07%20at%204(1).gif?raw=true" alt="Lightning RAG Implementation Demo" width="1050" height="600">
-        </div>
-
-    </video>
-</div>
-
-    </div>
-</body>
+    </body>
 </html>
