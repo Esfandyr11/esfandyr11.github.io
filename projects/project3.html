@@ -145,38 +145,91 @@
         <h3>1.1 Macroscopic Pipeline Overview</h3>
         <p>The system implements a four-phase computational pipeline: $\mathcal{P} = \langle \mathcal{S}, \mathcal{D}, \mathcal{R}, \mathcal{E} \rangle$ where $\mathcal{S}$ denotes schema profiling, $\mathcal{D}$ data profiling, $\mathcal{R}$ reasoning engine, and $\mathcal{E}$ execution runtime. Each phase emits enriched metadata structures that cascade forward through typed interfaces, forming a directed acyclic dependency graph $G_{\text{dep}} = (V_{\text{comp}}, E_{\text{data}})$.</p>
         
+        <h4>High-Level System Architecture</h4>
         <pre><code>
-// System Orchestration Pseudocode
-procedure MAIN-ORCHESTRATOR(db_uri, table_names, user_query)
-    // Phase 1: Schema Introspection
-    ψ ← SchemaProfiler(db_uri, table_names)
-    Ω ← ψ.profile()  // Ω ∈ SchemaProfile
-    
-    // Phase 2: Statistical Characterization
-    Δ ← DataProfilingLayer(db_uri, table_names)
-    Φ ← Δ.profile_data()  // Φ ∈ DataProfile
-    
-    // Phase 3: Query Synthesis
-    Θ ← SQLReasonerController(db_uri, Φ→path)
-    Ξ ← Θ.process_query(user_query)  // Ξ ∈ ExecutionResult
-    
-    // Phase 4: Validation & Materialization
-    if Ξ.success then
-        save_materialized(Ξ.final_nested_query)
-        emit_telemetry(Ξ.execution_summary)
-    else
-        trigger_backtracking(Ξ.reasoning_log)
-    end if
-end procedure
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      VECTORIZED QUERY SYNTHESIS SYSTEM                      │
+│                                    │                                        │
+│     ┌──────────────────────────────┴──────────────────────────────┐        │
+│     │                    ORCHESTRATION LAYER                        │        │
+│     │         (Main Controller & Pipeline Coordinator)              │        │
+│     └──────────────────────────────┬──────────────────────────────┘        │
+│                                    │                                        │
+│                 ┌──────────────────┼──────────────────┐                    │
+│                 │                  │                  │                    │
+┌─────────────────┴─────────┐ ┌──────┴─────────┐ ┌─────┴──────────┐ ┌─────┴─────────┐
+│   SCHEMA PROFILING        │ │  DATA PROFILING │ │ SQL REASONING  │ │  EXECUTION    │
+│       LAYER (S)           │ │     LAYER (D)   │ │   ENGINE (R)   │ │  RUNTIME (E)  │
+└───────────┬───────────────┘ └──────┬──────────┘ └─────┬──────────┘ └─────┬─────────┘
+            │                      │                  │                  │
+┌───────────┴───────────────┐ ┌──────┴──────────┐ ┌───┴──────────┐ ┌─────┴──────────┐
+│ - Information Schema       │ │ - Statistics    │ │ - Plan       │ │ - Connection   │
+│   Extraction              │ │   Aggregation   │ │   Generation │ │   Pool         │
+│ - Relationship Graph      │ │ - Category      │ │ - Error      │ │ - Retry Logic  │
+│   Construction            │ │   Inference     │ │   Refinement │ │ - Timeout      │
+│ - Join Validation         │ │ - Quality       │ │ - Nested     │ │   Management   │
+│                           │ │   Scoring       │ │   Query      │ │                │
+│                           │ │                 │ │   Synthesis  │ │                │
+└───────────────────────────┘ └─────────────────┘ └──────────────┘ └────────────────┘
         </code></pre>
 
-        <h3>1.2 Component Interaction Matrix</h3>
-        <p>The system exhibits loose coupling through context objects: $C_{\text{db}} \in \mathbb{R}^{|T| \times |C|}$ where $T$ is table set and $C$ column manifold. Each component consumes and produces typed dataclass structures ensuring compile-time contract validation while maintaining runtime dynamism through Python's structural subtyping.</p>
+        <h3>1.2 Component Interaction Flow</h3>
+        <p>Data flows through the system in a pipeline fashion, with each component enriching the context passed to the next. The schema profiler extracts metadata, the data profiler adds statistical insights, the reasoning engine generates query plans, and the execution runtime materializes results.</p>
         
-        <div class="equation">
-            $$\text{Component Interface: } \mathcal{I}_i = \langle \text{InputType}, \text{OutputType}, \text{Precondition}, \text{Postcondition} \rangle$$
-            $$\text{System Composability: } \bigcirc_{i=1}^{n} \mathcal{I}_i = \mathcal{I}_{\text{system}}$$
-        </div>
+        <pre><code>
+USER QUERY
+    │
+    │ 1. Submit Query
+    ▼
+┌──────────────────────────────────────────────────────┐
+│                   SQLReasonerController               │
+│  ┌────────────────────────────────────────────────┐  │
+│  │         _create_execution_plan()               │  │
+│  │  - Generate comprehensive context              │  │
+│  │  - Invoke LLM for plan generation              │  │
+│  └────────────────────────┬───────────────────────┘  │
+└────────────────────────────┼──────────────────────────┘
+                             │
+                             │ 2. Plan with Schema Context
+                             ▼
+┌──────────────────────────────────────────────────────┐
+│              ExecutionPlan (Dataclass)                │
+│  - steps: List[PlanStep]                              │
+│  - execution_order: List[int]                       │
+│  - final_output_requirements: str                    │
+└────────────────────────┬──────────────────────────────┘
+                         │
+                         │ 3. Execute Steps
+                         ▼
+┌──────────────────────────────────────────────────────┐
+│         _execute_plan_recursively()                   │
+│  ┌────────────────────────────────────────────────┐  │
+│  │   for step_id in execution_order:              │  │
+│  │     - Execute with retries                     │  │
+│  │     - Refine on failure                        │  │
+│  │     - Store results                            │  │
+│  └────────────────────────┬───────────────────────┘  │
+└────────────────────────────┼──────────────────────────┘
+                             │
+                             │ 4. Success/Failure Data
+                             ▼
+┌──────────────────────────────────────────────────────┐
+│         _compile_final_result()                       │
+│  ┌────────────────────────────────────────────────┐  │
+│  │   - Construct nested query                     │  │
+│  │   - Execute final query                        │  │
+│  │   - Verify results                             │  │
+│  └────────────────────────┬───────────────────────┘  │
+└────────────────────────────┼──────────────────────────┘
+                             │
+                             │ 5. Return Results
+                             ▼
+                    FINAL OUTPUT DICT
+                    ├─ success: bool
+                    ├─ final_output: List[Dict]
+                    ├─ final_nested_query: str
+                    └─ execution_summary: Dict
+        </code></pre>
     </div>
 
     <div class="box" id="schema-profiling-layer">
@@ -185,22 +238,55 @@ end procedure
         <h3>2.1 Database Introspection Engine</h3>
         <p>The $\text{SchemaProfiler}$ implements targeted information schema queries with predicate pushdown: $\sigma_{\text{table\_name} \in \mathcal{T}_{\text{target}}}(\text{information\_schema})$ reducing cardinality by $O(\frac{|\mathcal{T}_{\text{target}}|}{|\mathcal{T}_{\text{all}}|})$.</p>
         
+        <h4>Schema Extraction Pipeline</h4>
         <pre><code>
-// Schema Extraction with Selective Projection
-function EXTRACT-TABLE-METADATA($\mathcal{T}_{\text{target}}$, db_conn)
-    $\mathcal{Q}_{\text{sys}} \leftarrow$ {
-        "tables": $\pi_{\text{table\_name, table\_type}}(\sigma_{\text{table\_name} \in \mathcal{T}_{\text{target}}}(\text{tables}))$,
-        "columns": $\pi_{\text{table\_name, column\_name, data\_type}}(\sigma_{\text{table\_name} \in \mathcal{T}_{\text{target}}}(\text{columns}))$,
-        "pks": $\pi_{\text{table\_name, column\_name}}(\sigma_{\text{constraint\_type='PRIMARY KEY'}}(\bowtie_{\text{constraint\_name}}(\text{table\_constraints}, \text{key\_column\_usage})))$,
-        "fks": $\pi_{\text{source\_table, source\_column, target\_table, target\_column}}(\sigma_{\text{constraint\_type='FOREIGN KEY'}}(\text{referential\_constraints}))$
-    }
-    
-    for $q \in \mathcal{Q}_{\text{sys}}$ do
-        $\mathcal{M}[q] \leftarrow$ EXECUTE($\mathcal{Q}_{\text{sys}}[q]$)
-    end for
-    
-    return $\mathcal{M}$
-end function
+┌────────────────────────────────────────────────────────────────────────┐
+│                    SCHEMA PROFILER INITIALIZATION                      │
+│  ┌─────────────────────┐  ┌──────────────────────────┐               │
+│  │   Table List        │──│  Filter by Target Tables │               │
+│  │   (information_schema)│  │  σ table_name IN (...)   │               │
+│  └───────────┬─────────┘  └────────────┬─────────────┘               │
+│              │                         │                               │
+│              ▼                         ▼                               │
+│  ┌─────────────────────┐  ┌──────────────────────────┐               │
+│  │   Column Metadata   │  │   Primary Key Discovery  │               │
+│  │  (types, positions) │  │  (key_column_usage)      │               │
+│  └───────────┬─────────┘  └────────────┬─────────────┘               │
+│              │                         │                               │
+│              └───────────┬─────────────┴──────────┐                    │
+│                          │                        │                    │
+│                          ▼                        ▼                    │
+│               ┌────────────────────┐  ┌────────────────────┐          │
+│               │  Foreign Keys      │  │  Column Stats      │          │
+│               │  (referential)     │  │  (sample values)   │          │
+│               └──────────┬─────────┘  └──────────┬─────────┘          │
+│                          │                       │                     │
+│                          └───────────┬───────────┘                     │
+│                                      │                                 │
+│                                      ▼                                 │
+│                     ┌─────────────────────────────────┐                │
+│                     │   Relationship Discovery        │                │
+│                     │  ┌───────────────────────────┐  │                │
+│                     │  │  Explicit FKs (confidence=1.0) │  │           │
+│                     │  │  Implicit via Name Similarity │  │           │
+│                     │  │  sim(col1, col2) ≥ θ         │  │           │
+│                     │  └────────────┬────────────────┘  │           │
+│                     │               │                   │           │
+│                     │               ▼                   │           │
+│                     │      ┌─────────────────┐          │           │
+│                     │      │  Join Validation │          │           │
+│                     │      │  (EXISTS queries)│          │           │
+│                     │      └─────────┬───────┘          │           │
+│                     └────────────────┼──────────────────┘           │
+│                                      │                              │
+│                                      ▼                              │
+│                    ┌──────────────────────────────────────────────┐ │
+│                    │  SchemaProfile Dataclass                    │ │
+│                    │  - tables: Dict[str, TableInfo]            │ │
+│                    │  - relationships: List[RelationshipInfo]   │ │
+│                    │  - validated_joins: List[JoinValidationResult]│ │
+│                    └──────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────────────┘
         </code></pre>
 
         <h3>2.2 Relationship Graph Construction</h3>
@@ -215,48 +301,58 @@ end function
             \end{cases}$$
         </div>
         
+        <h4>Relationship Discovery and Validation Flow</h4>
         <pre><code>
-// Fuzzy Relationship Discovery
-algorithm FIND-PATTERN-MATCHES($\mathcal{T}$)
-    $\mathcal{R}_{\text{implicit}} \leftarrow \emptyset$
-    $\mathcal{C}_{\text{all}} \leftarrow \bigcup_{t \in \mathcal{T}} \{ (t, c) \mid c \in \text{columns}(t) \}$
-    
-    for $(t_i, c_i), (t_j, c_j) \in \mathcal{C}_{\text{all}} \times \mathcal{C}_{\text{all}}$ where $t_i \neq t_j$ do
-        if $\text{COMPATIBLE-TYPE}(c_i.\text{type}, c_j.\text{type})$ then
-            $\rho \leftarrow \text{NAME-SIMILARITY}(c_i.\text{name}, c_j.\text{name})$
-            if $\rho > \theta_{\text{rel}}$ then
-                $\mathcal{R}_{\text{implicit}} \leftarrow \mathcal{R}_{\text{implicit}} \cup \{$
-                    $\langle t_i, c_i, t_j, c_j, \rho, \text{implicit} \rangle$
-                $\}$
-            end if
-        end if
-    end for
-    
-    return $\mathcal{R}_{\text{implicit}}$
-end algorithm
-        </code></pre>
-
-        <h3>2.3 Join Validation via Existence Probing</h3>
-        <p>Each candidate relationship $\mathcal{R}_i$ undergoes empirical validation through $\text{EXISTS}$ queries with cardinality sampling. The validation function $\mathcal{V}: \mathcal{R} \rightarrow \{0,1\}$ returns success iff $\exists r \in (\mathcal{R}_i.\text{source} \bowtie_{\text{on}} \mathcal{R}_i.\text{target})$.</p>
-        
-        <pre><code>
-// Efficient Join Validation
-function VALIDATE-JOIN($\mathcal{R}_i$, $\mathcal{T}$)
-    $\mathcal{Q}_{\text{exists}} \leftarrow$
-        "SELECT EXISTS (SELECT 1 FROM $t_s$ s JOIN $t_t$ t " +
-        "ON s.$c_s$ = t.$c_t$ WHERE s.$c_s$ IS NOT NULL LIMIT 1)"
-    
-    $\mathcal{R}_i$.$\delta_{\text{sample}} \leftarrow$ QUICK-SAMPLE($\mathcal{R}_i$, $k=10$)
-    $\mathcal{R}_i$.$\tau_{\text{exec}} \leftarrow$ TIME-EXECUTE($\mathcal{Q}_{\text{exists}}$)
-    
-    if $|\mathcal{R}_i.\delta_{\text{sample}}| > 0$ then
-        $\mathcal{R}_i$.$\phi \leftarrow 1$  // Validated
-        return $\langle \text{success}, \mathcal{R}_i.\delta_{\text{sample}} \rangle$
-    else
-        $\mathcal{R}_i$.$\phi \leftarrow 0$  // Invalid
-        return $\langle \text{failure}, \emptyset \rangle$
-    end if
-end function
+┌─────────────────────────────────────────────────────────────────────┐
+│              RELATIONSHIP GRAPH CONSTRUCTION                        │
+│                                                                     │
+│  ┌──────────────────────┐          ┌──────────────────────────┐   │
+│  │  Explicit FKs        │          │  Implicit Discovery       │   │
+│  │  (from sys schema)   │          │  ┌──────────────────────┐ │   │
+│  │                      │          │  │  For each table pair │ │   │
+│  │  table1.col ──────── │─────────▶│  │  For each column pair│ │   │
+│  │         │            │          │  │  │  if type_compatible│ │   │
+│  │         │ (validated)│          │  │  │  │  ρ = similarity()│ │   │
+│  │         ▼            │          │  │  │  │  if ρ ≥ θ       │ │   │
+│  │  table2.col          │          │  │  │  │    add candidate │ │   │
+│  └────┬─────────────────┘          │  │  │  │  end            │ │   │
+│       │                            │  │  │  └───────────────────┘ │   │
+│       │                            │  │  └───────────────────────┘   │
+│       │                            │  └──────────┬───────────────────┘   │
+│       └────────────────────────────┴─────────────┘                         │
+│                                        │                                    │
+│                                        ▼                                    │
+│                     ┌──────────────────────────────────────────┐          │
+│                     │  RelationshipInfo Dataclass             │          │
+│                     │  - source_table, source_column         │          │
+│                     │  - target_table, target_column         │          │
+│                     │  - confidence: float (0.0-1.0)         │          │
+│                     │  - validated: bool                     │          │
+│                     └──────────────┬─────────────────────────┘          │
+│                                    │                                      │
+│                                    │ 3. Validate                          │
+│                                    ▼                                      │
+│                     ┌──────────────────────────────────────────┐          │
+│                     │  Join Validation Engine               │          │
+│                     │  ┌──────────────────────────────────┐ │          │
+│                     │  │  EXISTS check (LIMIT 1)        │ │          │
+│                     │  │  If success:                     │ │          │
+│                     │  │    sample 10 rows                │ │          │
+│                     │  │    confidence = row_count/10    │ │          │
+│                     │  │  Else:                           │ │          │
+│                     │  │    LLM-assisted validation      │ │          │
+│                     │  └──────────┬───────────────────────┘ │          │
+│                     └─────────────┼──────────────────────────┘          │
+│                                   │                                     │
+│                                   ▼                                     │
+│                     ┌──────────────────────────────────────────┐        │
+│                     │  JoinValidationResult                   │        │
+│                     │  - relationship: RelationshipInfo       │        │
+│                     │  - success: bool                        │        │
+│                     │  - row_count: int                       │        │
+│                     │  - execution_time: float                │        │
+│                     └──────────────────────────────────────────┘        │
+└─────────────────────────────────────────────────────────────────────┘
         </code></pre>
     </div>
 
@@ -266,89 +362,84 @@ end function
         <h3>3.1 Statistical Aggregation Framework</h3>
         <p>The $\text{DataProfilingLayer}$ computes comprehensive column statistics $\mathcal{S}_c$ for each attribute $c \in \bigcup_{t \in \mathcal{T}} \text{cols}(t)$. The statistic set includes nullity $\nu$, cardinality $\kappa$, distributional moments $\mu^{(k)}$, and pattern entropy $H$.</p>
         
-        <div class="equation">
-            $$\mathcal{S}_c = \langle \nu, \kappa, \mu^{(1)}, \mu^{(2)}, Q_{0.25}, Q_{0.5}, Q_{0.75}, H(c) \rangle$$
-            $$H(c) = -\sum_{v \in \text{dom}(c)} p(v) \log p(v)$$
-        </div>
-        
+        <h4>Column Profiling Operation</h4>
         <pre><code>
-// Column Statistics Computation
-procedure PROFILE-COLUMN($t$, $c$, $\mathcal{M}_{\text{schema}}$)
-    $\mathcal{Q}_{\text{stats}} \leftarrow$ {
-        "nullity": "SELECT COUNT(*) - COUNT($c$) FROM $t$",
-        "cardinality": "SELECT COUNT(DISTINCT $c$) FROM $t$ WHERE $c$ IS NOT NULL",
-        "moments": "SELECT AVG($c$::float), STDDEV($c$), MIN($c$), MAX($c$) FROM $t$ WHERE $c$ IS NOT NULL",
-        "quartiles": "SELECT PERCENTILE_CONT(0.25), PERCENTILE_CONT(0.5), PERCENTILE_CONT(0.75) FROM $t$ WHERE $c$ IS NOT NULL"
-    }
-    
-    $\mathcal{R} \leftarrow \emptyset$
-    for $k \in \mathcal{Q}_{\text{stats}}$ do
-        $\mathcal{R}[k] \leftarrow$ EXECUTE-QUERY($\mathcal{Q}_{\text{stats}}[k]$)
-    end for
-    
-    // Categorical entropy
-    if $\text{INFER-CATEGORY}(\mathcal{M}_{\text{schema}}[c].\text{type}, \mathcal{R}[\text{sample}]) = \text{categorical}$ then
-        $\mathcal{R}[H] \leftarrow -\sum \frac{\text{freq}(v)}{\text{total}} \log(\frac{\text{freq}(v)}{\text{total}})$
-    end if
-    
-    return $\mathcal{R}$
-end procedure
+┌────────────────────────────────────────────────────────────────────────┐
+│                    COLUMN PROFILING PIPELINE                          │
+│                                                                      │
+│  Input: Table t, Column c                                            │
+│                                                                      │
+│  ┌──────────────────────┐                                            │
+│  │ 1. Basic Counts      │──────────────┐                            │
+│  │    - total_count     │              │                            │
+│  │    - non_null_count  │              │                            │
+│  │    - distinct_count  │              │                            │
+│  └──────────┬───────────┘              │                            │
+│             │                         │                            │
+│  ┌──────────┴───────────┐             │                            │
+│  │ 2. Sample Values     │             │                            │
+│  │    (DISTINCT LIMIT 20)│            │                            │
+│  └──────────┬───────────┘             │                            │
+│             │                        │                            │
+│  ┌──────────┴───────────┐            │                            │
+│  │ 3. Infer Category    │◄───────────┘                            │
+│  │    based on type & samples                                       │
+│  └──────────┬───────────┘                                          │
+│             │                                                     │
+│             │ Category                                            │
+│             ▼                                                     │
+│  ┌──────────────────────┐  ┌──────────────────────────┐          │
+│  │ 4a. If Numerical:    │  │ 4b. If Categorical:      │          │
+│  │    - min, max, avg   │  │    - value_counts        │          │
+│  │    - stddev, median  │  │    - top_categories      │          │
+│  │    - quartiles       │  │    - entropy calculation │          │
+│  └──────────┬───────────┘  └──────────┬───────────────┘          │
+│             │                         │                            │
+│  ┌──────────┴───────────┐            │                            │
+│  │ 5. Data Quality      │◄───────────┴───────────┐                │
+│  │    Assessment        │                        │                │
+│  │    - null_percentage │                        │                │
+│  │    - issues list     │                        │                │
+│  └──────────┬───────────┘                        │                │
+│             │                                   │                │
+│  ┌──────────┴───────────┐                        │                │
+│  │ 6. Output            │◄───────────────────────┘                │
+│  │    ColumnStatistics   │                                       │
+│  │    Dataclass          │                                       │
+│  └───────────────────────┘                                       │
+└────────────────────────────────────────────────────────────────────┘
         </code></pre>
 
-        <h3>3.2 Data Category Inference Engine</h3>
-        <p>Column categorization $\mathcal{C}: (\text{type}, \mathcal{V}_{\text{sample}}) \rightarrow \{\text{numerical}, \text{categorical}, \text{datetime}, \text{text}, \text{identifier}\}$ employs pattern matching and statistical heuristics.</p>
-        
+        <h4>Data Quality Scoring Matrix</h4>
         <pre><code>
-// Heuristic Category Classification
-function INFER-DATA-CATEGORY(type_def, $\mathcal{V}_{\text{sample}}$)
-    if $\text{type\_predicate}(\text{type\_def}, \text{numeric\_types})$ then
-        return $\textbf{numerical}$
-    end if
-    
-    if $\text{pattern\_match}(\text{type\_def}, \text{iso8601\_regex})$ then
-        return $\textbf{datetime}$
-    end if
-    
-    // Identifier detection via length+charset constraints
-    $\mathcal{L}_{\text{avg}} \leftarrow \frac{1}{|\mathcal{V}_{\text{sample}}|} \sum_{v \in \mathcal{V}_{\text{sample}}} |v|$
-    $\mathcal{U}_{\text{unique}} \leftarrow |\{v \in \mathcal{V}_{\text{sample}}\}|$
-    
-    if $\forall v \in \mathcal{V}_{\text{sample}}: \text{len}(v) \in [1,4] \land \text{digit}(v)$ then
-        return $\textbf{identifier}$
-    end if
-    
-    if $\mathcal{L}_{\text{avg}} < \lambda_{\text{max}} \land \frac{\mathcal{U}_{\text{unique}}}{|\mathcal{V}_{\text{sample}}|} < \theta_{\text{card}}$ then
-        return $\textbf{categorical}$
-    end if
-    
-    return $\textbf{text}$
-end function
-        </code></pre>
-
-        <h3>3.3 Data Quality Scoring</h3>
-        <p>Quality assessment $\mathcal{Q}_t \in [0,1]$ for table $t$ aggregates column-level metrics via weighted linear combination: $\mathcal{Q}_t = w_c \cdot \mathcal{C}_t + w_u \cdot \mathcal{U}_t + w_s \cdot \mathcal{S}_t + w_v \cdot \mathcal{V}_t$ where $\mathcal{C}, \mathcal{U}, \mathcal{S}, \mathcal{V}$ represent completeness, uniqueness, consistency, and validity scores respectively.</p>
-        
-        <pre><code>
-// Quality Metric Aggregation
-function COMPUTE-QUALITY-ASSESSMENT($\mathcal{T}_{\text{stats}}$)
-    $\mathcal{Q}_{\text{agg}} \leftarrow \emptyset$
-    
-    for $c \in \text{columns}(\mathcal{T}_{\text{stats}})$ do
-        $\mathcal{C}_c \leftarrow 1 - \frac{\nu_c}{\text{total}}$
-        $\mathcal{U}_c \leftarrow \frac{\kappa_c}{\text{non-null}_c}$
-        $\mathcal{S}_c \leftarrow \max(1.0 - |\text{issues}_c| \cdot \delta, 0)$
-        $\mathcal{V}_c \leftarrow \begin{cases}
-            1 & \text{if } c.\text{category} = \text{numerical} \land \mu^{(2)} > 0 \\
-            0.9 & \text{if } c.\text{category} = \text{categorical} \land H(c) > 0.5 \\
-            0.8 & \text{otherwise}
-        \end{cases}$
-        
-        $\mathcal{Q}_{\text{agg}} \leftarrow \mathcal{Q}_{\text{agg}} \cup \langle \mathcal{C}_c, \mathcal{U}_c, \mathcal{S}_c, \mathcal{V}_c \rangle$
-    end for
-    
-    $\mathcal{Q}_{\text{table}} \leftarrow w^T \cdot \text{MEAN}(\mathcal{Q}_{\text{agg}})$
-    return $\mathcal{Q}_{\text{table}}$
-end function
+┌────────────────────────────────────────────────────────────────────────┐
+│              DATA QUALITY ASSESSMENT FLOW                             │
+│                                                                      │
+│  For each column in table:                                          │
+│                                                                      │
+│  ┌──────────────────────┐   ┌──────────────────────────┐            │
+│  │ Completeness Score   │   │  Uniqueness Score        │            │
+│  │ C = 1 - (null/total) │   │  U = distinct/non_null   │            │
+│  └──────────┬───────────┘   └──────────┬───────────────┘            │
+│             │                         │                               │
+│  ┌──────────┴───────────┐   ┌──────────┴───────────────┐            │
+│  │ Consistency Score    │   │  Validity Score          │            │
+│  │ S = max(1 - |issues|*0.1, 0)│  V = 1 - (|issues|*0.1)   │            │
+│  └──────────┬───────────┘   └──────────┬───────────────┘            │
+│             │                         │                               │
+│  ┌──────────┴─────────────────────────┴──────────┐                   │
+│  │ Weighted Aggregation:                        │                   │
+│  │ Q = 0.3*C + 0.2*U + 0.3*S + 0.2*V           │                   │
+│  └──────────┬───────────────────────────────────┘                   │
+│             │                                                         │
+│  ┌──────────┴───────────┐                                              │
+│  │ Table Data Quality   │                                              │
+│  │ Assessment           │                                              │
+│  │ - overall_score      │                                              │
+│  │ - issues list        │                                              │
+│  │ - recommendations    │                                              │
+│  └──────────────────────┘                                              │
+└────────────────────────────────────────────────────────────────────────┘
         </code></pre>
     </div>
 
@@ -358,520 +449,654 @@ end function
         <h3>4.1 Query Plan Generation as Graph Construction</h3>
         <p>The reasoning engine transforms natural language queries $\mathcal{Q}_{\text{nl}}$ into execution plans $\Pi = (V_{\text{steps}}, E_{\text{deps}})$ where each vertex $v_i \in V_{\text{steps}}$ represents an isolated SQL statement and edges encode data dependencies: $E_{\text{deps}} = \{ (v_i, v_j) \mid \text{output}(v_i) \subseteq \text{input}(v_j) \}$.</p>
         
+        <h4>Plan Generation and Execution Flow</h4>
         <pre><code>
-// Hierarchical Plan Synthesis
-algorithm CREATE-EXECUTION-PLAN($\mathcal{Q}_{\text{nl}}$, $\mathcal{C}_{\text{db}}$)
-    $\Pi \leftarrow$ LLM-INVOKE($\mathcal{Q}_{\text{nl}}$, $\mathcal{C}_{\text{db}}$, $\mathcal{P}_{\text{prompt}}$)
-    
-    // Validate plan structure
-    if $\text{TOPO-SORT}(\Pi.V, \Pi.E) = \emptyset$ then
-        throw CYCLIC-DEPENDENCY-ERROR
-    end if
-    
-    // Static verification of table/column names
-    for $v \in \Pi.V$ do
-        for $t \in v.\text{tables}$ do
-            if $t \notin \mathcal{C}_{\text{db}}.\text{tables}$ then
-                $\epsilon_{\text{fuzzy}} \leftarrow \text{FUZZY-MATCH}(t, \mathcal{C}_{\text{db}})$
-                if $\epsilon_{\text{fuzzy}} < \theta_{\text{match}}$ then
-                    throw UNDEFINED-TABLE-ERROR
-                end if
-            end if
-        end for
-    end for
-    
-    return $\Pi$
-end algorithm
+┌────────────────────────────────────────────────────────────────────────┐
+│                    SQL REASONING ENGINE OPERATION                     │
+│                                                                      │
+│  User Query                                                          │
+│    │                                                                 │
+│    │ 1. Create Plan                                                  │
+│    ▼                                                                 │
+│  ┌──────────────────────────────────────────────────────────────┐    │
+│  │  _create_execution_plan()                                    │    │
+│  │  ┌────────────────────────────────────────────────────────┐  │    │
+│  │  │ - Build comprehensive context                          │  │    │
+│  │  │ - Include schema, relationships, samples               │  │    │
+│  │  │ - Invoke LLM with structured prompt                    │  │    │
+│  │  │ - Parse JSON response                                  │  │    │
+│  │  └────────────────────────┬───────────────────────────────┘  │    │
+│  └────────────────────────────┼──────────────────────────────────┘    │
+│                               │                                       │
+│                               │ 2. Execution Plan                     │
+│                               ▼                                       │
+│                    ┌──────────────────┐                              │
+│                    │ ExecutionPlan    │                              │
+│                    │ - steps: List[]  │                              │
+│                    │ - dependencies   │                              │
+│                    │ - final_output   │                              │
+│                    └────────┬─────────┘                              │
+│                             │                                          │
+│                             │ 3. Execute Recursive                    │
+│                             ▼                                          │
+│                    ┌──────────────────┐                              │
+│                    │ _execute_plan_...│                              │
+│                    │   recursive()    │                              │
+│                    └────────┬─────────┘                              │
+│                             │                                          │
+│                ┌────────────┼──────────────┐                         │
+│                │            │              │                         │
+│                ▼            ▼              ▼                         │
+│         ┌────────────┐ ┌──────────┐ ┌──────────┐                    │
+│         │ Step 1     │ │ Step 2   │ │ Step 3   │                    │
+│         │ Execution  │ │ Execution│ │ Execution│                    │
+│         │            │ │          │ │          │                    │
+│         │ (retry logic)│ (retry   │ │ (retry   │                    │
+│         │            │ │  logic)  │ │  logic)  │                    │
+│         └──────┬─────┘ └────┬─────┘ └────┬─────┘                    │
+│                │            │            │                         │
+│                └────────────┼────────────┘                         │
+│                             │                                        │
+│  ┌──────────────────────────┴──────────────────────────────┐        │
+│  │ 4. Construct Nested Query                                │        │
+│  │  - Combine successful steps                              │        │
+│  │  - Use subquery nesting                                  │        │
+│  │  - LLM-assisted if needed                                │        │
+│  └──────────────────────────┬──────────────────────────────┘        │
+│                             │                                          │
+│  ┌──────────────────────────┴──────────────────────────────┐        │
+│  │ 5. Execute Final Query                                     │        │
+│  │  - Execute with validation                                 │        │
+│  │  - Fallback to last successful step on failure            │        │
+│  └──────────────────────────┬──────────────────────────────┘        │
+│                             │                                          │
+│                    ┌────────▼────────┐                               │
+│                    │  Final Result   │                               │
+│                    │  Compilation    │                               │
+│                    └─────────────────┘                               │
+└────────────────────────────────────────────────────────────────────────┘
         </code></pre>
 
-        <h3>4.2 Connection Pool Architecture</h3>
-        <p>Database connectivity implements semaphore-guarded resource pooling: $\mathcal{P}_{\text{conn}} = \{ \rho_1, \rho_2, ..., \rho_n \}$ with atomic acquire-release primitives $\text{acquire}(\mathcal{P}) \mapsto \rho_i$ and $\text{release}(\rho_i) \mapsto \mathcal{P}$. Connection health is monitored via heartbeat probes $\mathcal{H}(\rho) = \text{SELECT 1}$ with exponential backoff retry logic.</p>
-        
+        <h4>Retry and Refinement State Machine</h4>
         <pre><code>
-// Connection Pool Management
-class ConnectionPool
-    $\mathcal{S} \leftarrow \emptyset$  // Available connections
-    $\mathcal{O} \leftarrow \emptyset$  // In-use connections
-    $\mathcal{L} \leftarrow$ Semaphore($\kappa_{\text{max}}$)
-    
-    method GET-CONNECTION($\tau_{\text{timeout}}$)
-        $\mathcal{L}$.ACQUIRE()
-        $\text{start} \leftarrow \text{CLOCK-NOW}()$
-        
-        while $\mathcal{S} = \emptyset$ do
-            if $\text{CLOCK-NOW}() - \text{start} > \tau_{\text{timeout}}$ then
-                $\mathcal{L}$.RELEASE()
-                raise TIMEOUT-EXCEPTION
-            end if
-            
-            $\rho_{\text{new}} \leftarrow \text{CREATE-CONNECTION}(\text{db\_uri})$
-            $\rho_{\text{new}}$.$\text{autocommit} \leftarrow \text{TRUE}$
-            $\mathcal{S}$.PUSH($\rho_{\text{new}}$)
-        end while
-        
-        $\rho \leftarrow \mathcal{S}$.POP()
-        $\mathcal{O}$.PUSH($\rho$)
-        $\mathcal{L}$.RELEASE()
-        
-        // Health check with exponential backoff
-        for $i \in [1, \text{max\_retries}]$ do
-            try
-                $\rho$.EXECUTE("SELECT 1")
-                return $\rho$
-            except OperationalError:
-                $\text{SLEEP}(2^i \cdot \beta_{\text{base}})$
-                $\rho \leftarrow \text{RECONNECT}(\rho)$
-            end try
-        end for
-        
-        return $\rho$
-    end method
-end class
-        </code></pre>
-
-        <h3>4.3 Error Taxonomy and Recovery Strategies</h3>
-        <p>Error categorization $\mathcal{E}: \text{Exception} \rightarrow \langle \text{category}, \text{retryable}, \text{refinement} \rangle$ maps PostgreSQL error codes to recovery actions. The recovery policy $\pi_{\text{recover}}$ implements a finite state machine with states $\mathcal{S} = \{ \text{planning}, \text{execution}, \text{refinement}, \text{backtrack}, \text{fail} \}$.</p>
-        
-        <pre><code>
-// Error Categorization Logic
-function CATEGORIZE-ERROR($\epsilon$)
-    if $\epsilon \in \mathcal{E}_{\text{operational}}$ then
-        if "too many connections" $\subseteq \epsilon.\text{message}$ then
-            return $\langle \text{CONNECTION\_POOL}, \text{retryable}=1, \text{wait} \rangle$
-        else
-            return $\langle \text{OPERATIONAL}, \text{retryable}=1, \text{retry} \rangle$
-        end if
-    end if
-    
-    if $\epsilon.\text{pgcode} \in \mathcal{C}_{\text{syntax}}$ then
-        $\mathcal{L}_{\text{col}} \leftarrow \text{EXTRACT-MISSING-COLUMN}(\epsilon)$
-        $\mathcal{C}_{\text{candidates}} \leftarrow \text{FUZZY-MATCH}(\mathcal{L}_{\text{col}}, \mathcal{C}_{\text{schema}})$
-        return $\langle \text{UNDEFINED\_COLUMN}, \text{retryable}=0, \mathcal{C}_{\text{candidates}} \rangle$
-    end if
-    
-    if $\epsilon.\text{pgcode} = \text{data\_error}$ then
-        return $\langle \text{DATA\_TYPE\_MISMATCH}, \text{retryable}=0, \text{cast\_suggestion} \rangle$
-    end if
-    
-    return $\langle \text{UNKNOWN}, \text{retryable}=0, \text{manual\_review} \rangle$
-end function
-        </code></pre>
-    </div>
-
-    <div class="box" id="query-refinement-engine">
-        <h2>5. Query Refinement Engine: $\mathcal{F}$</h2>
-        
-        <h3>5.1 Fuzzy Column Resolution</h3>
-        <p>When encountering $\text{UNDEFINED\_COLUMN}$ errors, the refinement engine activates string similarity search over schema namespace $\mathcal{N} = \{ t.c \mid t \in \mathcal{T}, c \in \text{cols}(t) \}$. Similarity computation employs Boyer-Moore preprocessing for substring detection and Ratcliff-Obershelp gestalt pattern matching for semantic similarity, yielding candidate set $\mathcal{C}_{\text{fuzzy}}$ filtered by threshold $\theta_{\text{sim}} \geq 0.6$.</p>
-        
-        <pre><code>
-// Fuzzy Schema Matching
-algorithm RESOLVE-AMBIGUOUS-COLUMN($c_{\text{wrong}}$, $\mathcal{N}_{\text{schema}}$, $\tau$)
-    $\mathcal{C}_{\text{match}} \leftarrow \emptyset$
-    
-    // Substring matching phase
-    for $n \in \mathcal{N}_{\text{schema}}$ do
-        $n_{\text{lower}} \leftarrow n$.$\text{lower}()$
-        $c_{\text{lower}} \leftarrow c_{\text{wrong}}$.$\text{lower}()$
-        
-        if $n_{\text{lower}}$.$\text{contains}(c_{\text{lower}})$ or 
-           $c_{\text{lower}}$.$\text{contains}(n_{\text{lower}})$ then
-            $\mathcal{C}_{\text{match}}$.$\text{push}(\langle n, 0.9 \rangle)$
-        end if
-    end for
-    
-    // Difflib ratio phase for remaining candidates
-    for $n \in \mathcal{N}_{\text{schema}} \setminus \mathcal{C}_{\text{match}}$ do
-        $\rho \leftarrow \text{SequenceMatcher}(c_{\text{wrong}}, n)$.$\text{ratio}()$
-        if $\rho \geq \tau$ then
-            $\mathcal{C}_{\text{match}}$.$\text{push}(\langle n, \rho \rangle)$
-        end if
-    end for
-    
-    // Sort by descending similarity, return top-k
-    $\mathcal{C}_{\text{sorted}} \leftarrow \text{SORT-BY-SIMILARITY}(\mathcal{C}_{\text{match}})$
-    return $\mathcal{C}_{\text{sorted}}[:\kappa_{\text{max}}]$
-end algorithm
-        </code></pre>
-
-        <h3>5.2 LLM-Guided Query Synthesis</h3>
-        <p>The refinement engine constructs prompts $\mathcal{P} = \langle \mathcal{Q}_{\text{failed}}, \mathcal{C}_{\text{schema}}, \mathcal{R}_{\text{deps}}, \mathcal{E}_{\text{ctx}} \rangle$ where context windows are bounded by $\ell_{\text{max}} = 8000$ tokens. The prompt template incorporates few-shot examples from successful prior executions $\mathcal{H}_{\text{success}}$ weighted by recency: $w(h) = \exp(-\lambda \cdot \Delta_{\text{time}}(h))$.</p>
-        
-        <pre><code>
-// Prompt Construction for Query Refinement
-function BUILD-REFINEMENT-PROMPT($\Pi_{\text{step}}$, $\epsilon$, $\mathcal{D}_{\text{dep}}$, $\mathcal{C}_{\text{db}}$)
-    $\mathcal{P}_{\text{header}} \leftarrow$ "You are PostgreSQL expert. Fix failed standalone query."
-    
-    $\mathcal{P}_{\text{error}} \leftarrow$ {
-        "original_query": $\Pi_{\text{step}}.\text{sql}$,
-        "error_category": CATEGORIZE-ERROR($\epsilon$),
-        "failure_message": $\epsilon.\text{message}$,
-        "wrong_identifiers": EXTRACT-MISSING-IDENTIFIERS($\epsilon$)
-    }
-    
-    $\mathcal{P}_{\text{schema}} \leftarrow$ {
-        "available_tables": $\mathcal{C}_{\text{db}}$.$\text{tables}$,
-        "validated_joins": $\mathcal{C}_{\text{db}}$.$\text{relationships}[\text{validated}]$,
-        "column_samples": $\{c: \mathcal{C}_{\text{db}}$.$\text{sample\_data}[c]_{[:3]} \mid c \in \Pi_{\text{step}}.\text{columns\_used} \}$
-    }
-    
-    $\mathcal{P}_{\text{context}} \leftarrow$ {
-        "dependency_results": $\{ \langle d, \mathcal{D}_{\text{dep}}[d].\text{row\_count} \rangle \mid d \in \Pi_{\text{step}}.\text{dependencies} \}$,
-        "success_criteria": $\Pi_{\text{step}}.\text{validation\_criteria}$
-    }
-    
-    // Concatenate with template
-    $\mathcal{P}_{\text{full}} \leftarrow \mathcal{P}_{\text{header}} \oplus \text{JSON}(\mathcal{P}_{\text{error}}) \oplus \text{JSON}(\mathcal{P}_{\text{schema}}) \oplus \text{JSON}(\mathcal{P}_{\text{context}})$
-    
-    return $\mathcal{P}_{\text{full}}$
-end function
-        </code></pre>
-
-        <h3>5.3 Nested Query Construction via LLM Rewriting</h3>
-        <p>The deterministic query constructor synthesizes final queries $\mathcal{Q}_{\text{final}}$ by recursively nesting successful steps $\mathcal{S}_{\text{succ}} = \{ v_i \mid \text{success}(v_i) = 1 \}$. The nesting strategy prefers subquery forms over CTEs to maximize PostgreSQL optimizer flexibility, particularly for correlated subqueries with $\exists$ semantics.</p>
-        
-        <pre><code>
-// Subquery Nesting Strategy
-function CONSTRUCT-NESTED-QUERY($\Pi$, $\mathcal{R}_{\text{exec}}$)
-    $\mathcal{S}_{\text{succ}} \leftarrow$ FILTER-BY-SUCCESS($\Pi.V$, $\mathcal{R}_{\text{exec}}$)
-    
-    if $|\mathcal{S}_{\text{succ}}| = 1$ then
-        return $\mathcal{S}_{\text{succ}}[0].\text{sql}$  // Trivial case
-    end if
-    
-    // Build context for LLM
-    $\mathcal{CTX} \leftarrow \emptyset$
-    for $v \in \mathcal{S}_{\text{succ}}$ in $\Pi.\text{execution\_order}$ do
-        $\mathcal{CTX}$.$\text{add}$({
-            "step_id": $v$.$\text{step\_id}$,
-            "description": $v$.$\text{description}$,
-            "query_preview": $v$.$\text{sql}$.$\text{substr}(0, 200)$,
-            "columns": $v$.$\text{columns\_used}$,
-            "row_count": $|\mathcal{R}_{\text{exec}}[v$.$\text{step\_id}$.$].\text{data}|$
-        })
-    end for
-    
-    $\mathcal{P}_{\text{nest}} \leftarrow$ {
-        "role": "SQL expert specializing in nested subqueries",
-        "task": "Combine successful steps into single query using subquery nesting",
-        "constraints": "Avoid CTEs, prefer WHERE col IN (SELECT...), handle aggregates properly",
-        "context": $\mathcal{CTX}$
-    }
-    
-    $\mathcal{Q}_{\text{final}} \leftarrow$ LLM-GENERATE($\mathcal{P}_{\text{nest}}$)
-    return $\mathcal{Q}_{\text{final}}$
-end function
+┌────────────────────────────────────────────────────────────────────────┐
+│                    EXECUTION RETRY STATE MACHINE                      │
+│                                                                      │
+│  Start Execution                                                     │
+│    │                                                                 │
+│    │ 1. Execute Query                                                │
+│    ▼                                                                 │
+│  ┌──────────────────────┐                                            │
+│  │ Execute SQL Query    │                                            │
+│  │ with timeout         │                                            │
+│  └─────────┬────────────┘                                            │
+│            │                                                         │
+│            │ Result?                                                 │
+│      ┌─────┴──────┐                                                  │
+│      │            │                                                  │
+│   SUCCESS      FAILURE                                             │
+│      │            │                                                  │
+│      │            ▼                                                  │
+│      │     ┌──────────────────┐                                     │
+│      │     │ CATEGORIZE-ERROR │                                     │
+│      │     └────────┬─────────┘                                     │
+│      │              │                                                 │
+│      │      ┌───────┴────────┐                                      │
+│      │      │                │                                      │
+│      │  RETRYABLE      NON-RETRYABLE                             │
+│      │      │                │                                      │
+│      │      ▼                ▼                                     │
+│      │  ┌──────────┐    ┌──────────┐                               │
+│      │  │ RETRY    │    │ REFINE   │                               │
+│      │  │ (max 3)  │    │ QUERY    │                               │
+│      │  └────┬─────┘    └────┬─────┘                               │
+│      │       │               │                                     │
+│      │       │               └──────┐                              │
+│      │       │                      │                              │
+│      └───────▲──────────────────────┘                              │
+│              │                                                         │
+│      ┌───────┴────────┐                                                │
+│      │  Attempt < 3?  │                                                │
+│      └───────┬────────┘                                                │
+│              │                                                         │
+│         YES  │  NO                                                     │
+│      ┌───────┴───────┐                                                │
+│      │               │                                                │
+│      ▼               ▼                                                │
+│  Continue      Mark Failed                                            │
+│    │               │                                                  │
+│    └───────┬───────┘                                                  │
+│            │                                                           │
+│  ┌─────────▼──────────┐                                               │
+│  │ Validation Check   │                                               │
+│  └─────────┬──────────┘                                               │
+│            │                                                           │
+│      ┌─────┴──────┐                                                    │
+│      │            │                                                    │
+│   PASS         FAIL                                                    │
+│      │            │                                                    │
+│      │            └────────────────┐                                   │
+│      │                             │                                   │
+│      ▼                             ▼                                   │
+│  Store Result              Retry with                               │
+│  in Memory                 Refined Query                            │
+│                                                                      │
+│  After All Steps:                                                    │
+│    ┌────────────────────────────────┐                                │
+│    │ Construct Nested Query         │                                │
+│    │ - Combine successful steps     │                                │
+│    │ - Generate final SQL           │                                │
+│    └────────┬───────────────────────┘                                │
+│             │                                                          │
+│    ┌────────▼────────┐                                                │
+│    │ Execute Final   │                                                │
+│    │ Query           │                                                │
+│    └────────┬────────┘                                                │
+│             │                                                          │
+│    ┌────────▼────────┐                                                │
+│    │ Verify Results  │                                                │
+│    └────────┬────────┘                                                │
+│             │                                                          │
+│    ┌────────▼────────┐                                                │
+│    │ Return Output   │                                                │
+│    └─────────────────┘                                                │
+└────────────────────────────────────────────────────────────────────────┘
         </code></pre>
     </div>
 
-    <div class="box" id="execution-runtime">
-        <h2>6. Execution Runtime: $\mathcal{E}$</h2>
+    <div class="box" id="combined-architecture">
+        <h2>5. Complete Integrated System Flow</h2>
         
-        <h3>6.1 Retry State Machine</h3>
-        <p>Execution implements a non-deterministic finite automaton with retry states $\mathcal{S}_{\text{retry}} = \{ \text{initial}, \text{attempt}_1, ..., \text{attempt}_n, \text{refine}, \text{backtrack} \}$. Transition probabilities $P(s_i \rightarrow s_j)$ depend on error category and attempt count.</p>
-        
-        <div class="equation">
-            $$P(\text{retry}) = \begin{cases}
-            e^{-\lambda \cdot \text{attempt}} & \text{if } \text{category} \in \mathcal{E}_{\text{retryable}} \\
-            0 & \text{if } \text{category} \in \mathcal{E}_{\text{fatal}} \\
-            \delta(\text{fuzzy\_matches}) & \text{if } \text{category} = \text{UNDEFINED\_COLUMN}
-            \end{cases}$$
-        </div>
+        <h3>5.1 Full Pipeline Data Flow</h3>
+        <p>This diagram shows the complete end-to-end flow from database connection through final result delivery, including all major components, data structures, and decision points.</p>
         
         <pre><code>
-// Recursive Plan Execution with Backtracking
-function EXECUTE-PLAN-RECURSIVE($\Pi$, $\mathcal{R}$, $\text{max\_retries}$)
-    $\mathcal{M} \leftarrow \emptyset$  // Execution memory
-    
-    for $\text{step}_i$ in $\Pi$.$\text{execution\_order}$ do
-        $\mathcal{D}_{\text{dep}} \leftarrow \{ \langle d, \mathcal{M}[d] \rangle \mid d \in \text{step}_i.\text{dependencies} \}$
-        
-        for $\text{attempt} \in [1, \text{max\_retries}]$ do
-            try
-                $\langle \text{success}, \mathcal{D}, \text{message} \rangle \leftarrow$ EXECUTE-SQL($\text{step}_i.\text{sql}$, $\tau_{\text{stmt}}=30$)
-                
-                if $\text{success} \land \text{VALIDATE}(\text{step}_i, \mathcal{D})$ then
-                    $\text{step}_i$.$\text{success} \leftarrow \text{TRUE}$
-                    $\text{step}_i$.$\text{data} \leftarrow \mathcal{D}$
-                    $\mathcal{M}[\text{step}_i.\text{step\_id}] \leftarrow \text{step}_i$
-                    break  // Success, exit retry loop
-                else
-                    throw VALIDATION-EXCEPTION(message)
-                end if
-                
-            catch $\epsilon$ as $\text{sql\_error}$
-                $\langle \text{cat}, \text{retry\_flag}, \text{suggestion} \rangle \leftarrow$ CATEGORIZE-ERROR($\epsilon$)
-                
-                if $\text{retry\_flag} = 1 \land \text{attempt} < \text{max\_retries}$ then
-                    continue  // Retry same query
-                else if $\text{cat} \in \{ \text{UNDEFINED\_COLUMN}, \text{UNDEFINED\_TABLE} \}$ then
-                    $\text{step}_i.\text{sql} \leftarrow$ REFINE-QUERY($\text{step}_i$, $\epsilon$, $\mathcal{D}_{\text{dep}}$, $\text{attempt}$)
-                    continue  // Retry with refined query
-                else
-                    $\text{step}_i$.$\text{success} \leftarrow \text{FALSE}$
-                    $\text{step}_i$.$\text{error} \leftarrow \epsilon.\text{message}$
-                    $\mathcal{M}[\text{step}_i.\text{step\_id}] \leftarrow \text{step}_i$
-                    break  // Permanent failure
-                end if
-            end try
-        end for
-        
-        if $\text{step}_i.\text{success} = \text{FALSE}$ then
-            // Prune dependent steps
-            $\mathcal{F} \leftarrow$ FIND-DEPENDENT-STEPS($\Pi$, $\text{step}_i$)
-            for $f \in \mathcal{F}$ do
-                $f$.$\text{success} \leftarrow \text{FALSE}$
-                $f$.$\text{error} \leftarrow \text{"Pruned due to dependency failure"}$
-            end for
-        end if
-    end for
-    
-    return $\mathcal{M}$
-end function
+┌────────────────────────────────────────────────────────────────────────┐
+│                    COMPLETE SYSTEM ARCHITECTURE                       │
+│                                                                      │
+│  DATABASE (PostgreSQL)                                               │
+│    │                                                                 │
+│    │ Connection                                                      │
+│    ▼                                                                 │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │             CONNECTION POOL (5 connections)                │    │
+│  │  - Health monitoring                                         │    │
+│  │  - Automatic reconnect                                       │    │
+│  └──────────────┬──────────────────────────────────────────────┘    │
+│                 │                                                   │
+│    ┌────────────┼────────────┐                                     │
+│    │            │            │                                     │
+│    ▼            ▼            ▼                                     │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │         SCHEMA PROFILER (SchemaProfilingLayer)              │    │
+│  │                                                               │    │
+│  │  ┌────────────────────────┐   ┌────────────────────────┐    │    │
+│  │  │ Extract Table Metadata │──▶│ Build Relationship Graph│    │    │
+│  │  └──────────┬─────────────┘   └──────────┬─────────────┘    │    │
+│  │             │                           │                     │    │
+│  │  ┌──────────▼─────────────┐   ┌─────────▼────────────┐      │    │
+│  │  │ Identify Relationships  │──▶│ Validate Joins       │      │    │
+│  │  │ (explicit & implicit)   │   │ (EXISTS queries)     │      │    │
+│  │  └──────────┬─────────────┘   └──────────┬─────────────┘      │    │
+│  └─────────────┼─────────────────────────────┼────────────────────┘    │
+│                │                             │                         │
+│                ▼                             ▼                         │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │         DATA PROFILER (DataProfilingLayer)                  │    │
+│  │                                                               │    │
+│  │  ┌────────────────────────┐   ┌────────────────────────┐    │    │
+│  │  │ Profile Each Column    │──▶│ Compute Statistics     │    │    │
+│  │  └──────────┬─────────────┘   └──────────┬─────────────┘    │    │
+│  │             │                           │                     │    │
+│  │  ┌──────────▼─────────────┐   ┌─────────▼────────────┐      │    │
+│  │  │ Infer Data Categories  │──▶│ Calculate Quality     │      │    │
+│  │  │ (numerical/categorical)│   │ Scores               │      │    │
+│  │  └──────────┬─────────────┘   └──────────┬─────────────┘      │    │
+│  └─────────────┼─────────────────────────────┼────────────────────┘    │
+│                │                             │                         │
+│                │         ┌─────────────────────────────────────────┐   │
+│                │         │   SchemaProfile & DataProfile           │   │
+│                │         │   JSON Files (materialized)             │   │
+│                │         └─────────────────┬───────────────────────┘   │
+│                │                           │                             │
+│                ▼                           ▼                             │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │           SQL REASONER CONTROLLER                           │    │
+│  │                                                               │    │
+│  │  ┌────────────────────────┐   ┌────────────────────────┐    │    │
+│  │  │ Load Data Profiles     │──▶│ Create Execution Plan  │    │    │
+│  │  └──────────┬─────────────┘   └──────────┬─────────────┘    │    │
+│  │             │                           │                     │    │
+│  │  ┌──────────▼─────────────┐   ┌─────────▼────────────┐      │    │
+│  │  │ Execute Plan Steps     │──▶│ Refine on Failure    │      │    │
+│  │  │ (with retries)         │   │ (LLM + fuzzy match)  │      │    │
+│  │  └──────────┬─────────────┘   └──────────┬─────────────┘      │    │
+│  └─────────────┼─────────────────────────────┼────────────────────┘    │
+│                │                             │                         │
+│                │         ┌───────────────────▼─────────────────────┐  │
+│                │         │   Execution Results Dictionary          │  │
+│                │         └───────────────────┬─────────────────────┘  │
+│                │                             │                         │
+│                ▼                             ▼                         │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │         FINAL CONSTRUCTION & OUTPUT                         │    │
+│  │                                                               │    │
+│  │  ┌────────────────────────┐   ┌────────────────────────┐    │    │
+│  │  │ Construct Nested Query│──▶│ Execute Final Query    │    │    │
+│  │  │ (combine steps)       │   │                        │    │    │
+│  │  └──────────┬─────────────┘   └──────────┬─────────────┘    │    │
+│  │             │                           │                     │    │
+│  │  ┌──────────▼─────────────┐   ┌─────────▼────────────┐      │    │
+│  │  │ Verify Results        │──▶│ Save to JSON/SQL      │      │    │
+│  │  │ (semantic check)      │   │                        │      │    │
+│  │  └───────────────────────┘   └────────────────────────┘      │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                │                                                     │
+│                │ 6. Return                                           │
+│                ▼                                                     │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │              FINAL OUTPUT DICTIONARY                        │    │
+│  │                                                               │    │
+│  │  {                                                             │    │
+│  │    "success": true,                                           │    │
+│  │    "final_output": [...],                                     │    │
+│  │    "final_nested_query": "SELECT ...",                        │    │
+│  │    "execution_summary": {                                     │    │
+│  │      "total_steps": 5,                                        │    │
+│  │      "successful_steps": 5,                                   │    │
+│  │      "failed_steps": 0,                                       │    │
+│  │      "total_retries": 2,                                      │    │
+│  │      "llm_calls": 7                                           │    │
+│  │    },                                                         │    │
+│  │    "reasoning_log": [...],                                    │    │
+│  │    "plan": {...}                                             │    │
+│  │  }                                                           │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                │                                                     │
+│                ▼                                                     │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │         POST-PROCESSING & TELEMETRY                         │    │
+│  │  - Save results to file                                      │    │
+│  │  - Log execution metrics                                     │    │
+│  │  - Update performance counters                               │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+└────────────────────────────────────────────────────────────────────────┘
         </code></pre>
 
-        <h3>6.2 Statement Timeout Enforcement</h3>
-        <p>Each query executes within resource constraints defined by $\tau_{\text{cpu}} \leq \tau_{\text{stmt}}$ and $\sigma_{\text{mem}} \leq \mu_{\text{max}}$. PostgreSQL's statement_timeout parameter is set dynamically: $\text{SET statement\_timeout} = \tau_{\text{stmt}} \cdot 1000$ milliseconds.</p>
+        <h3>5.2 Component Interaction with Data Structures</h3>
+        <p>This diagram shows how data flows between components with specific data structures and method calls.</p>
         
         <pre><code>
-// Resource-Constrained Query Execution
-function EXECUTE-SQL-CONSTRAINED($\mathcal{Q}$, $\tau_{\text{stmt}}$, $\mu_{\text{max}}$)
-    $\rho \leftarrow \text{ConnectionPool}$.GET-CONNECTION(timeout=$\tau_{\text{stmt}}$)
-    
-    try
-        $\rho$.EXECUTE("SET statement_timeout = $\tau_{\text{stmt}}$ * 1000")
-        $\rho$.EXECUTE("SET work_mem = $\mu_{\text{max}}$")
-        
-        $\text{cursor} \leftarrow \rho$.CURSOR(factory=RealDictCursor)
-        $\text{start} \leftarrow$ CLOCK-NOW()
-        $\text{cursor}$.EXECUTE($\mathcal{Q}$)
-        $\mathcal{D} \leftarrow \text{cursor}$.FETCH-ALL()
-        $\delta_{\text{exec}} \leftarrow$ CLOCK-NOW() - start
-        
-        // Resource usage telemetry
-        $\rho$.EXECUTE("SHOW statement_timeout")
-        $\rho$.EXECUTE("SHOW work_mem")
-        
-        $\rho$.COMMIT()
-        return $\langle \text{SUCCESS}, \mathcal{D}, \delta_{\text{exec}} \rangle$
-        
-    except psycopg2.OperationalError as $\epsilon$
-        $\rho$.ROLLBACK()
-        if "timeout" in $\epsilon$.message then
-            return $\langle \text{TIMEOUT}, \emptyset, \epsilon \rangle$
-        else
-            return $\langle \text{CONNECTION\_LOST}, \emptyset, \epsilon \rangle$
-        end if
-        
-    finally
-        $\text{ConnectionPool}$.RELEASE($\rho$)
-    end try
-end function
+┌────────────────────────────────────────────────────────────────────────┐
+│                  DETAILED COMPONENT INTERACTION                       │
+│                                                                      │
+│  Database Connection                                                  │
+│    │                                                                 │
+│    │ psycopg2.connect()                                              │
+│    ▼                                                                 │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │   ConnectionPool (max_connections=5)                       │    │
+│  │   - available: List[conn]                                  │    │
+│  │   - in_use: List[conn]                                     │    │
+│  │   - semaphore: threading.Semaphore                       │    │
+│  └──────────────┬──────────────────────────────────────────────┘    │
+│                 │                                                   │
+│    ┌────────────┼─────────────┐                                    │
+│    │            │             │                                    │
+│    ▼            ▼             ▼                                    │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │              SchemaProfiler                                │   │
+│  │                                                             │   │
+│  │  Input: db_uri, table_names (List[str])                   │   │
+│  │                                                             │   │
+│  │  Output: SchemaProfile                                      │   │
+│  │  ┌──────────────────────────────────────────────────────┐   │   │
+│  │  │ tables: Dict[str, TableInfo]                        │   │   │
+│  │  │ relationships: List[RelationshipInfo]               │   │   │
+│  └────┬────────────────────────────────────────────────────┘   │   │
+│       │                                                         │   │
+│       │ SchemaProfile                                           │   │
+│       │ (as dict)                                               │   │
+│       ▼                                                         │   │
+│  ┌─────────────────────────────────────────────────────────────┐│   │
+│  │         DataProfilingLayer                                  ││   │
+│  │                                                             ││   │
+│  │  Input: db_uri, table_names + SchemaProfile                ││   │
+│  │                                                             ││   │
+│  │  Output: DataProfile                                        ││   │
+│  │  ┌──────────────────────────────────────────────────────┐   ││   │
+│  │  │ tables: Dict[str, TableStatistics]                  │   ││   │
+│  │  │ data_quality: Dict[str, DataQualityAssessment]      │   ││   │
+│  │  │ value_distributions: Dict[str, ValueDistribution]   │   ││   │
+│  │  └────────┬────────────────────────────────────────────┘   ││   │
+│  │          │                                                   ││   │
+│  └──────────┼───────────────────────────────────────────────────┘│   │
+│             │                                                    │   │
+│             │ DataProfile (JSON)                               │   │
+│             ▼                                                    │   │
+│  ┌─────────────────────────────────────────────────────────────┐│   │
+│  │         SQLReasonerController                               ││   │
+│  │                                                             ││   │
+│  │  ┌──────────────────────────────────────────────────────┐   ││   │
+│  │  │ _load_data_profile()  ◄─── data_profile_path        │   ││   │
+│  │  └──────────┬──────────────────────────────────────────┘   ││   │
+│  │             │                                               ││   │
+│  │  ┌──────────▼──────────────┐  ┌────────────────────────┐   ││   │
+│  │  │ _create_execution_plan()│──▶│ LLM Invocation         │   ││   │
+│  │  └──────────┬──────────────┘  └────────────────────────┘   ││   │
+│  │             │                                               ││   │
+│  │  Output: ExecutionPlan                                     ││   │
+│  │  ┌──────────────────────────────────────────────────────┐   ││   │
+│  │  │ plan_id: str                                         │   ││   │
+│  │  │ steps: List[PlanStep]                                │   ││   │
+│  │  │ execution_order: List[int]                           │   ││   │
+│  │  └──────────┬──────────────────────────────────────────┘   ││   │
+│  │             │                                               ││   │
+│  │  ┌──────────▼──────────────────────────┐                    ││   │
+│  │  │ _execute_plan_recursively()         │                    ││   │
+│  │  │                                       │                    ││   │
+│  │  │ For each step in execution_order:   │                    ││   │
+│  │  │   - _execute_sql_query()           │                    ││   │
+│  │  │   - If fail: _refine_failed_step() │                    ││   │
+│  │  │   - Retry up to max_retries        │                    ││   │
+│  │  │   - Store results                  │                    ││   │
+│  │  └──────────┬──────────────────────────┘                    ││   │
+│  │             │                                               ││   │
+│  │  ┌──────────▼──────────────────────────┐                    ││   │
+│  │  │ DeterministicQueryConstructor        │                    ││   │
+│  │  │ - construct_nested_query()           │                    ││   │
+│  │  │ - Uses LLM or deterministic logic    │                    ││   │
+│  │  └──────────────────────────────────────┘                    ││   │
+│  └───────────▲───────────────────────────────────────────────────┘│   │
+│             │                                                    │   │
+│             │ Results Dictionary                                 │   │
+│             ▼                                                    │   │
+│  ┌─────────────────────────────────────────────────────────────┐│   │
+│  │               FINAL RESULT COMPILATION                     ││   │
+│  │  - success: bool                                           ││   │
+│  │  - final_output: List[Dict]                                ││   │
+│  │  - final_nested_query: str                                 ││   │
+│  │  - execution_summary: Dict                                 ││   │
+│  │  - reasoning_log: List[str]                                ││   │
+│  └─────────────────────────────────────────────────────────────┘│   │
+└────────────────────────────────┬──────────────────────────────────┘   │
+                                 │                                        │
+                                 │ Output                                 │
+                                 ▼                                        │
+┌────────────────────────────────────────────────────────────────────────┐
+│                     POST-PROCESSING & STORAGE                         │
+│  - Save to JSON file                                                   │
+│  - Save .sql file if multiple rows                                     │
+│  - Log metrics                                                         │
+│  - Update performance counters                                         │
+└────────────────────────────────────────────────────────────────────────┘
         </code></pre>
     </div>
 
-    <div class="box" id="performance-analysis">
-        <h2>7. Performance Characterization</h2>
+    <div class="box" id="execution-flow">
+        <h2>6. Error Handling and Recovery Flow</h2>
         
-        <h3>7.1 Complexity Analysis</h3>
-        <p>Schema profiling complexity: $O(|T| \cdot |C| + |R| \cdot \log |R|)$ for table extraction and relationship validation. Data profiling scales as $O(\sum_{t \in T} |t| \cdot \text{cost}(\text{aggs}))$ with PostgreSQL's parallel aggregate execution. Query planning LLM invocations exhibit amortized $O(\log n)$ complexity due to caching of successful plan patterns $\mathcal{H}_{\text{plan}}$ indexed by query template hash.</p>
-        
-        <div class="equation">
-            $$\text{Total Execution Time} = \underbrace{O(|T| \cdot \bar{c})}_{\text{Schema}} + \underbrace{O(\sum_{t \in T} \alpha_t \cdot |t|)}_{\text{Data Profiling}} + \underbrace{O(k \cdot \log n)}_{\text{LLM Planning}} + \underbrace{O(\sum_{i=1}^{m} \tau_i)}_{\text{Execution}}$$
-        </div>
-        
-        <h3>7.2 Resource Utilization Optimization</h3>
-        <p>Connection pool sizing follows Little's Law: $L = \lambda \cdot W$ where $\lambda$ is query arrival rate and $W$ is mean execution time. Optimal pool size $\kappa_{\text{opt}} = \lceil L \rceil + \sigma_{\text{buffers}}$. LLM rate limiting implements token bucket algorithm with refill rate $r = \frac{\text{tokens}}{\Delta t}$ and burst capacity $B = 2r$.</p>
+        <h3>6.1 Error Classification and Recovery Strategy</h3>
+        <p>This diagram illustrates how different error types are categorized and routed through appropriate recovery mechanisms.</p>
         
         <pre><code>
-// Adaptive Resource Allocation
-class PerformanceController
-    $\lambda_{\text{hist}} \leftarrow$ CircularBuffer(size=1000)
-    $\mathcal{W}_{\text{hist}} \leftarrow$ CircularBuffer(size=1000)
-    
-    method UPDATE-METRICS($\delta_{\text{exec}}$)
-        $\lambda_{\text{hist}}$.PUSH(CLOCK-NOW())
-        $\mathcal{W}_{\text{hist}}$.PUSH($\delta_{\text{exec}}$)
-    end method
-    
-    method CALCULATE-OPTIMAL-POOL-SIZE()
-        $\bar{\lambda} \leftarrow \frac{|\lambda_{\text{hist}}|}{\text{max}(\lambda_{\text{hist}}) - \text{min}(\lambda_{\text{hist}})}$
-        $\bar{W} \leftarrow \text{MEAN}(\mathcal{W}_{\text{hist}})$
-        $L_{\text{avg}} \leftarrow \bar{\lambda} \cdot \bar{W}$
-        $\kappa_{\text{opt}} \leftarrow \lceil L_{\text{avg}} \rceil + \sigma_{\text{safetymargin}}$
-        return $\kappa_{\text{opt}}$
-    end method
-    
-    method ADJUST-CONNECTION-POOL()
-        $\kappa_{\text{new}} \leftarrow$ CALCULATE-OPTIMAL-POOL-SIZE()
-        if $|\kappa_{\text{new}} - \kappa_{\text{current}}| > \theta_{\text{hysteresis}}$ then
-            $\text{ConnectionPool}$.RESIZE($\kappa_{\text{new}}$)
-        end if
-    end method
-end class
+┌────────────────────────────────────────────────────────────────────────┐
+│                    ERROR HANDLING & RECOVERY FLOW                     │
+│                                                                      │
+│  Query Execution Error                                               │
+│    │                                                                 │
+│    │ 1. Categorize Error                                             │
+│    ▼                                                                 │
+│  ┌────────────────────────────────────────┐                          │
+│  │   PostgresErrorHandler               │                          │
+│  │                                       │                          │
+│  │  ┌──────────────────────────────────┐ │                          │
+│  │  │ categorize_error(exception)     │ │                          │
+│  │  │                                   │ │                          │
+│  │  │ Switch on exception type:       │ │                          │
+│  │  │   OperationalError:             │ │                          │
+│  │  │     -> CONNECTION_POOL          │ │                          │
+│  │  │     -> RETRYABLE                │ │                          │
+│  │  │   ProgrammingError:             │ │                          │
+│  │  │     -> UNDEFINED_COLUMN         │ │                          │
+│  │  │     -> NON-RETRYABLE            │ │                          │
+│  │  │   DataError:                    │ │                          │
+│  │  │     -> DATA_ERROR               │ │                          │
+│  │  │   ...                           │ │                          │
+│  │  └────────┬────────────────────────┘ │                          │
+│  └───────────┼──────────────────────────┘                          │
+│              │                                                      │
+│      ┌───────┴────────┐                                             │
+│      │                │                                             │
+│  RETRYABLE      NON-RETRYABLE                                     │
+│      │                │                                             │
+│      ▼                ▼                                             │
+│  ┌──────────┐    ┌──────────┐                                      │
+│  │ RETRY    │    │ REFINE   │                                      │
+│  │ - Wait   │    │ - Build  │                                      │
+│  │ - Retry  │    │   prompt │                                      │
+│  │ same SQL │    │ - LLM    │                                      │
+│  └────┬─────┘    │   invoke │                                      │
+│       │          │ - Update │                                      │
+│       │          │   query  │                                      │
+│       │          └────┬─────┘                                      │
+│       │               │                                             │
+│       └───────┬───────┘                                             │
+│               │                                                     │
+│       ┌───────▼───────┐                                             │
+│       │  Attempt < 3? │                                             │
+│       └───────┬───────┘                                             │
+│               │                                                     │
+│          YES  │  NO                                                 │
+│       ┌───────┴───────┐                                             │
+│       │               │                                             │
+│       ▼               ▼                                             │
+│   Continue      Mark Step                                          │
+│    │            as Failed                                           │
+│    │               │                                                │
+│    │               ▼                                                │
+│    │         ┌─────────────────┐                                  │
+│    │         │ Prune Dependent │                                  │
+│    │         │ Steps           │                                  │
+│    │         └─────────────────┘                                  │
+│    │                                                               │
+│    │ After All Steps:                                            │
+│    └───────▲──────────────────────────────────────────────────────┘
+│            │                                                       │
+│    ┌───────┴────────┐                                              │
+│    │ Construct Final│                                              │
+│    │ Nested Query   │                                              │
+│    └───────┬────────┘                                              │
+│            │                                                       │
+│    ┌───────▼────────┐                                              │
+│    │ Execute Final  │                                              │
+│    │ Query          │                                              │
+│    └───────┬────────┘                                              │
+│            │                                                       │
+│    ┌───────▼────────┐                                              │
+│    │ Apply Fallback │                                              │
+│    │ if needed      │                                              │
+│    └────────────────┘                                              │
+└────────────────────────────────────────────────────────────────────────┘
+        </code></pre>
+
+        <h3>6.2 Fuzzy Matching Resolution</h3>
+        <pre><code>
+┌────────────────────────────────────────────────────────────────────────┐
+│                    FUZZY MATCHING RESOLUTION                          │
+│                                                                      │
+│  Error: column "eqiupment_id" does not exist                        │
+│    │                                                                 │
+│    │ 1. Extract Wrong Identifier                                   │
+│    ▼                                                                 │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │   _find_similar_columns("eqiupment_id")                     │    │
+│  │                                                               │    │
+│  │  Phase 1: Substring Matching                                 │    │
+│  │  ┌──────────────────────────────────────────────────────┐   │    │
+│  │  │ For each column in schema:                         │   │    │
+│  │  │   col_lower = column.lower()                       │   │    │
+│  │  │   wrong_lower = "eqiupment_id".lower()             │   │    │
+│  │  │                                                    │   │    │
+│  │  │   if col_lower contains wrong_lower OR            │   │    │
+│  │  │      wrong_lower contains col_lower:               │   │    │
+│  │  │      matches.append((column, 0.9))                 │   │    │
+│  │  └────────────────────────┬───────────────────────────┘   │    │
+│  │                           │                               │    │
+│  │  Phase 2: Difflib Ratio  │                               │    │
+│  │  ┌──────────────────────────────────────────────────────┐   │    │
+│  │  │ For remaining columns:                             │   │    │
+│  │  │   ratio = SequenceMatcher(wrong, column).ratio() │   │    │
+│  │  │   if ratio ≥ 0.6:                                  │   │    │
+│  │  │      matches.append((column, ratio))               │   │    │
+│  │  └────────────────────────┬───────────────────────────┘   │    │
+│  │                           │                               │    │
+│  │  Sort by similarity score │                               │    │
+│  │  Return top 5 matches     │                               │    │
+│  └───────────────┬───────────┴───────────────────────────────┘    │
+│                  │                                                    │
+│                  ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │   Matches Found:                                            │    │
+│  │   - equipment_id (0.95)                                     │    │
+│  │   - equipment_type_id (0.72)                                │    │
+│  │   - plant_equipment_id (0.68)                               │    │
+│  └───────────────┬──────────────────────────────────────────────┘    │
+│                  │                                                    │
+│                  │ 2. Build Refinement Prompt                        │
+│                  ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │   LLM Prompt with context:                                  │    │
+│  │   - Original query                                          │    │
+│  │   - Error message                                           │    │
+│  │   - Suggested columns                                       │    │
+│  │   - Schema context                                          │    │
+│  └───────────────┬──────────────────────────────────────────────┘    │
+│                  │                                                    │
+│                  │ 3. LLM Invocation                                 │
+│                  ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │   Refined Query Generated:                                  │    │
+│  │   SELECT * FROM table WHERE equipment_id = ...            │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+└────────────────────────────────────────────────────────────────────────┘
         </code></pre>
     </div>
 
-    <div class="box" id="validation-verification">
-        <h2>8. Validation and Verification Strategies</h2>
+    <div class="box" id="performance-characteristics">
+        <h2>7. Performance and Scaling Architecture</h2>
         
-        <h3>8.1 Semantic Validation of Intermediate Results</h3>
-        <p>Each execution step $v_i$ undergoes validation $\mathcal{V}_i: \mathcal{D}_i \rightarrow \{0,1\}$ where $\mathcal{D}_i$ is result set. Validation criteria include non-emptiness predicates $\Xi_{\text{nonempty}}: |\mathcal{D}_i| > 0$ and column existence checks $\Xi_{\text{col}}: \forall c \in v_i.\text{columns\_used}, \exists d \in \mathcal{D}_i: c \in \text{keys}(d)$.</p>
-        
+        <h3>7.1 Parallel Execution Strategy</h3>
         <pre><code>
-// Multi-Predicate Validation Framework
-function VALIDATE-STEP($v_i$, $\mathcal{D}_i$, $\mathcal{C}_{\text{expected}}$)
-    // Predicate 1: Cardinality check
-    if $|\mathcal{D}_i| = 0$ then
-        return $\langle \text{FAIL}, \text{"Empty result set"} \rangle$
-    end if
-    
-    // Predicate 2: Column presence with fuzzy matching
-    $\mathcal{C}_{\text{found}} \leftarrow \text{keys}(\mathcal{D}_i[0])$
-    for $c_{\text{exp}} \in \mathcal{C}_{\text{expected}}$ do
-        $\mathcal{M}_{\text{match}} \leftarrow \emptyset$
-        for $c_{\text{found}} \in \mathcal{C}_{\text{found}}$ do
-            if $\text{NORMALIZE}(c_{\text{exp}}) = \text{NORMALIZE}(c_{\text{found}})$ then
-                $\mathcal{M}_{\text{match}} \leftarrow \text{TRUE}$
-                break
-            end if
-        end for
-        
-        if $\mathcal{M}_{\text{match}} = \text{FALSE}$ then
-            $\mathcal{C}_{\text{fuzzy}} \leftarrow \text{FUZZY-MATCH}(c_{\text{exp}}, \mathcal{C}_{\text{found}})$
-            $\text{WARN}("Column ", c_{\text{exp}}, " missing; similar: ", \mathcal{C}_{\text{fuzzy}})$
-        end if
-    end for
-    
-    // Predicate 3: Type compliance
-    for $d \in \mathcal{D}_i[:10]$ do  // Sample first 10 rows
-        for $\langle k, v \rangle \in d.\text{items}()$ do
-            if $\text{EXPECTED-TYPE}(k) = \text{numeric}$ and not $\text{IS-NUMERIC}(v)$ then
-                $\text{WARN}("Type mismatch for column ", k)$
-            end if
-        end for
-    end for
-    
-    return $\langle \text{SUCCESS}, \text{"Validation passed"} \rangle$
-end function
+┌────────────────────────────────────────────────────────────────────────┐
+│                    PARALLEL EXECUTION STRATEGY                        │
+│                                                                      │
+│  Main Thread                                                          │
+│    │                                                                 │
+│    │ 1. Create Plan Steps                                            │
+│    ▼                                                                 │
+│  ┌──────────────────────┐                                            │
+│  │ Step 1 (Independent) │────────┐                                   │
+│  │ - No dependencies    │        │                                   │
+│  └──────────┬───────────┘        │                                   │
+│            │                    │                                   │
+│            │                    ▼                                   │
+│  ┌─────────▼──────────┐   ┌──────────────────────┐               │
+│  │ Step 2 (Depends on │   │ Connection Pool      │               │
+│  │  Step 1)           │   │ Thread 1             │               │
+│  └──────────┬──────────┘   └──────────┬───────────┘               │
+│            │                       │                               │
+│            │ 2. Submit to Pool     │                               │
+│            └──────┬────────┬───────┘                               │
+│                   │        │                                       │
+│              ┌────▼─────┐  │                                       │
+│              │ Wait for │  │                                       │
+│              │ Step 1   │  │                                       │
+│              └────┬─────┘  │                                       │
+│                   │        │                                       │
+│              ┌────▼─────┐  │                                       │
+│              │ Execute  │  │                                       │
+│              │ Step 2   │  │                                       │
+│              └──────────┘  │                                       │
+│                           │                                       │
+│              ┌────────────┴──────────┐                            │
+│              │ Step 3 (Depends on   │                            │
+│              │  Steps 1 & 2)         │                            │
+│              └──────────┬────────────┘                            │
+│                        │                                          │
+│              ┌─────────▼─────────┐                                │
+│              │ Wait Dependencies │                                │
+│              └─────────┬─────────┘                                │
+│                        │                                          │
+│              ┌─────────▼─────────┐                                │
+│              │ Execute Step 3    │                                │
+│              └─────────┬─────────┘                                │
+│                        │                                          │
+│              ┌─────────▼─────────┐                                │
+│              │ Final Aggregation │                                │
+│              └─────────┬─────────┘                                │
+│                        │                                          │
+│              ┌─────────▼─────────┐                                │
+│              │ Return Results    │                                │
+│              └───────────────────┘                                │
+└────────────────────────────────────────────────────────────────────────┘
         </code></pre>
 
-        <h3>8.2 End-to-End Result Verification</h3>
-        <p>Final query results $\mathcal{D}_{\text{final}}$ are verified against user query intent $\mathcal{I}_{\text{user}}$ through semantic overlap scoring using embedding similarity $\text{sim}_{\text{cosine}}(\text{embed}(\mathcal{D}_{\text{final}}), \text{embed}(\mathcal{I}_{\text{user}})) \geq \theta_{\text{intent}}$.</p>
-        
+        <h3>7.2 Resource Management and Scaling</h3>
         <pre><code>
-// Intent Verification
-function VERIFY-FINAL-RESULTS($\mathcal{D}_{\text{final}}$, $\mathcal{I}_{\text{user}}$, $\phi_{\text{threshold}}$)
-    if $|\mathcal{D}_{\text{final}}| = 0$ then
-        return $\langle \text{FAIL}, \text{"No data returned"} \rangle$
-    end if
-    
-    $\mathcal{V}_{\text{result}} \leftarrow \text{EMBED}(\text{JSON}(\mathcal{D}_{\text{final}}))$
-    $\mathcal{V}_{\text{intent}} \leftarrow \text{EMBED}(\mathcal{I}_{\text{user}})$
-    
-    $\text{similarity} \leftarrow \text{COSINE-SIMILARITY}(\mathcal{V}_{\text{result}}, \mathcal{V}_{\text{intent}})$
-    
-    if $\text{similarity} < \phi_{\text{threshold}}$ then
-        $\mathcal{S}_{\text{diagnosis}} \leftarrow \text{LLM-DIAGNOSE-MISMATCH}(\mathcal{D}_{\text{final}}, \mathcal{I}_{\text{user}})$
-        return $\langle \text{PARTIAL}, \mathcal{S}_{\text{diagnosis}} \rangle$
-    end if
-    
-    // Row-level anomaly detection
-    $\mu_{\text{rows}} \leftarrow \text{MEAN}(|\mathcal{D}_{\text{final}}|)$
-    $\sigma_{\text{rows}} \leftarrow \text{STD-DEV}(|\mathcal{D}_{\text{final}}|)$
-    if $|\mathcal{D}_{\text{final}}| > \mu_{\text{rows}} + 3 \cdot \sigma_{\text{rows}}$ then
-        $\text{WARN}("Potential cartesian product: ", |\mathcal{D}_{\text{final}}|, " rows")$
-    end if
-    
-    return $\langle \text{SUCCESS}, \text{"Final verification passed"} \rangle$
-end function
-        </code></pre>
-    </div>
-
-    <div class="box" id="test-corpus">
-        <h2>9. Test Corpus and Evaluation</h2>
-        
-        <h3>9.1 Query Diversity Spectrum</h3>
-        <p>The test suite $\mathcal{T}_{\text{eval}} = \{ \mathcal{Q}_i \}_{i=1}^{50}$ spans five complexity tiers: $\mathcal{T}_1$ (single-table aggregation), $\mathcal{T}_2$ (two-table joins), $\mathcal{T}_3$ (multi-level aggregation), $\mathcal{T}_4$ (temporal analytics), and $\mathcal{T}_5$ (cross-table correlation). Each tier contains 10 queries with controlled vocabulary overlap $\Omega(\mathcal{Q}_i, \mathcal{Q}_j) \leq 0.3$ for $i \neq j$.</p>
-        
-        <pre><code>
-// Test Query Generator
-class QueryGenerator
-    $\mathcal{T}_{\text{base}} \leftarrow$ [
-        "Find equipment with average production > 1000 units in 2025",
-        "Analyze relationship between power input and coal quantity",
-        "Identify moisture thresholds triggering operational alerts",
-        "Compare specific heat reduction year-over-year"
-    ]
-    
-    method GENERATE-VARIATIONS($\mathcal{Q}_{\text{base}}$, $n_{\text{variants}}$)
-        $\mathcal{V} \leftarrow \emptyset$
-        for $q \in \mathcal{Q}_{\text{base}}$ do
-            for $i \in [1, n_{\text{variants}}]$ do
-                $\text{prompt} \leftarrow$ "Generate semantically similar query to: " + $q$
-                $\text{prompt} \leftarrow \text{prompt} + "\nConstraints: use different equipment types, time ranges, metrics"
-                $q_{\text{variant}} \leftarrow$ LLM-GENERATE($\text{prompt}$)
-                $\mathcal{V} \leftarrow \mathcal{V} \cup \{ q_{\text{variant}} \}$
-            end for
-        end for
-        return $\mathcal{V}$
-    end method
-    
-    method COMPUTE-DIVERSITY-METRIC($\mathcal{T}$)
-        $\mathcal{M}_{\text{sim}} \leftarrow \emptyset$
-        for $q_i, q_j \in \mathcal{T} \times \mathcal{T}$ where $i < j$ do
-            $s_{i,j} \leftarrow \text{JACCARD-SIMILARITY}(\text{tokenize}(q_i), \text{tokenize}(q_j))$
-            $\mathcal{M}_{\text{sim}}$.$\text{push}(s_{i,j})$
-        end for
-        
-        $\text{diversity} \leftarrow 1 - \text{MEAN}(\mathcal{M}_{\text{sim}})$
-        return $\text{diversity}$
-    end method
-end class
-        </code></pre>
-
-        <h3>9.2 Success Metrics and Failure Analysis</h3>
-        <p>Primary metric $S_{\text{success}} = \frac{|\mathcal{T}_{\text{pass}}|}{|\mathcal{T}_{\text{eval}}|}$ where $\mathcal{T}_{\text{pass}} = \{ \mathcal{Q}_i \mid \text{executes\_correctly}(\mathcal{Q}_i) \land \text{meets\_intent}(\mathcal{Q}_i) \}$. Secondary metrics include LLM call efficiency $\eta_{\text{LLM}} = \frac{\text{successful\_queries}}{\text{total\_llm\_invocations}}$ and average refinement iterations $\bar{r} = \frac{1}{|\mathcal{T}_{\text{eval}}|} \sum r_i$.</p>
-        
-        <pre><code>
-// Evaluation Framework
-class EvaluationEngine
-    function RUN-COMPREHENSIVE-EVALUATION($\mathcal{T}_{\text{eval}}$, $\mathcal{S}_{\text{system}}$)
-        $\mathcal{M}_{\text{results}} \leftarrow$ DataFrame(columns=[
-            "query_id", "text", "success", "execution_time", "llm_calls", 
-            "retry_count", "refinement_hops", "semantic_score"
-        ])
-        
-        for $i, q \in \text{enumerate}(\mathcal{T}_{\text{eval}})$ do
-            $\text{start} \leftarrow$ CLOCK-NOW()
-            $\langle \text{result}, \mathcal{L}_{\text{llm}} \rangle \leftarrow \mathcal{S}_{\text{system}}.\text{PROCESS}(q)$
-            $\delta_{\text{exec}} \leftarrow$ CLOCK-NOW() - start
-            
-            $\text{semantic\_score} \leftarrow$ VERIFY-INTENT($\text{result}$, $q$)
-            
-            $\mathcal{M}_{\text{results}}$.$\text{append}$({
-                "query_id": $i$,
-                "text": $q$,
-                "success": $\text{result}$.$\text{success}$,
-                "execution_time": $\delta_{\text{exec}}$,
-                "llm_calls": $|\mathcal{L}_{\text{llm}}|$,
-                "retry_count": $\text{result}$.$\text{total\_retries}$,
-                "refinement_hops": $\text{result}$.$\text{refinement\_count}$,
-                "semantic_score": $\text{semantic\_score}$
-            })
-        end for
-        
-        // Calculate aggregate metrics
-        $\text{success\_rate} \leftarrow \frac{\text{SUM}(\mathcal{M}_{\text{results}}.\text{success})}{|\mathcal{M}_{\text{results}}|}$
-        $\text{avg\_execution} \leftarrow \text{MEAN}(\mathcal{M}_{\text{results}}.\text{execution\_time})$
-        $\text{efficiency} \leftarrow \frac{\text{SUM}(\mathcal{M}_{\text{results}}.\text{output\_rows})}{\text{SUM}(\mathcal{M}_{\text{results}}.\text{llm\_calls})}$
-        
-        // Failure mode analysis
-        $\mathcal{F}_{\text{modes}} \leftarrow \text{CLUSTER-FAILURES}(\mathcal{M}_{\text{results}}[\text{success}=\text{FALSE}])$
-        
-        return $\langle \mathcal{M}_{\text{results}}, \text{success\_rate}, \mathcal{F}_{\text{modes}} \rangle$
-    end function
-end class
+┌────────────────────────────────────────────────────────────────────────┐
+│                  RESOURCE MANAGEMENT & SCALING                        │
+│                                                                      │
+│  System Resources                                                     │
+│    │                                                                 │
+│    ├─► CPU Cores (n)                                                 │
+│    ├─► Memory (RAM)                                                  │
+│    └─► Network Bandwidth                                             │
+│                                                                      │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │           PerformanceController (Singleton)                │    │
+│  │                                                             │    │
+│  │  Metrics Tracked:                                           │    │
+│  │  ┌────────────────────────┐   ┌────────────────────────┐  │    │
+│  │  │ Query Latency         │   │ LLM Call Count        │  │    │
+│  │  │ - p50, p95, p99       │   │ - per query           │  │    │
+│  │  └──────────┬─────────────┘   └──────────┬─────────────┘  │    │
+│  │             │                           │                 │    │
+│  │  ┌──────────▼──────────┐   ┌───────────▼──────────┐      │    │
+│  │  │ Connection Pool     │   │ Connection Pool      │      │    │
+│  │  │ Size Adjustment     │   │ Connection Timeout   │      │    │
+│  │  │ (Adaptive)          │   │ Adjustment           │      │    │
+│  │  └─────────────────────┘   └──────────────────────┘      │    │
+│  └────────────────────────┬───────────────────────────────────┘    │
+│                         │                                            │
+│              ┌──────────▼──────────┐                                 │
+│              │ Auto-Scaling Logic  │                                 │
+│              │                     │                                 │
+│              │ if avg_latency >    │                                 │
+│              │    threshold:       │                                 │
+│              │   increase pool     │                                 │
+│              │   size              │                                 │
+│              │ if error_rate >     │                                 │
+│              │    threshold:       │                                 │
+│              │   trigger alert     │                                 │
+│              └─────────────────────┘                                 │
+│                                                                      │
+│  Caching Layer                                                       │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │   PlanCache (LRU)                                          │    │
+│  │   - query_hash → ExecutionPlan                             │    │
+│  │   - TTL: 3600 seconds                                      │    │
+│  │   - Max size: 1000 entries                                 │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                                                                      │
+│  Rate Limiting                                                       │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │   Token Bucket Algorithm                                   │    │
+│  │   - Refill rate: 1 token/sec                               │    │
+│  │   - Burst capacity: 2 tokens                               │    │
+│  │   - Applies to LLM calls                                   │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+└────────────────────────────────────────────────────────────────────────┘
         </code></pre>
     </div>
 
@@ -893,118 +1118,44 @@ end class
             $$\text{Performance Gain} = \frac{T_{\text{naive}} - T_{\text{system}}}{T_{\text{naive}}} \times 100\% \approx 73\%$$
         </div>
         
-        <h3>10.3 Limitations and Extensions</h3>
-        <p>Current limitations include:</p>
-        <ul>
-            <li><strong>Schema Drift:</strong> No dynamic schema change detection $\Delta \mathcal{S}$ during long-running sessions</li>
-            <li><strong>LLM Cost:</strong> Token consumption scales linearly with schema complexity $O(|T| \cdot |C|)$</li>
-            <li><strong>Dialect Lock-in:</strong> PostgreSQL-specific error codes limit portability to other SQL dialects</li>
-        </ul>
-        
-        <h3>10.4 Future Research Directions</h3>
-        <p>Proposed extensions include:</p>
-        <ul>
-            <li><strong>Vectorized Query Plans:</strong> Encode queries as high-dimensional vectors $\mathbf{v}_q \in \mathbb{R}^d$ for similarity-based plan retrieval from $\mathcal{H}_{\text{success}}$</li>
-            <li><strong>Adaptive Schema Caching:</strong> Implement invalidation strategies for schema cache $\mathcal{C}_{\text{schema}}$ using PostgreSQL's LISTEN/NOTIFY mechanism</li>
-            <li><strong>Multi-Dialect Support:</strong> Abstract error handling through adapter pattern $\mathcal{A}_{\text{postgres}}, \mathcal{A}_{\text{mysql}}, \mathcal{A}_{\text{sqlite}}$</li>
-            <li><strong>Explainability Layer:</strong> Generate natural language explanations $\mathcal{E}_{\text{nl}}$ for query plans using fine-tuned instruction models</li>
-        </ul>
-        
-        <h3>10.5 Final Remarks</h3>
-        <p>This architecture successfully demonstrates that complex query synthesis can be decomposed into verifiable components with clear contracts, enabling robust integration of LLMs into critical data infrastructure. The system's resilience through fuzzy matching and iterative refinement provides a template for building trustworthy AI-augmented database tools.</p>
-        
-        <p>The complete codebase, evaluation corpus, and interactive demonstrations are available at the project repository, enabling reproducibility and further extension by the research community.</p>
-    </div>
-
-    <div class="box" id="references">
-        <h2>References</h2>
-        <p>[1] PostgreSQL Documentation. "Error Codes and Messages". PostgreSQL 15 Manual, 2024.</p>
-        <p>[2] Levenshtein, V. I. "Binary codes capable of correcting deletions, insertions, and reversals". Soviet Physics Doklady, 1966.</p>
-        <p>[3] Ratcliff, J. W., & Metzener, D. E. "Pattern matching: The gestalt approach". Dr. Dobb's Journal, 1988.</p>
-        <p>[4] Vaswani, A., et al. "Attention is All You Need". NeurIPS, 2017.</p>
-        <p>[5] Abadi, D. J., et al. "The Design and Implementation of Modern Column-Oriented Database Systems". Foundations and Trends in Databases, 2013.</p>
-    </div>
-
-    <div class="box" id="appendices">
-        <h2>Appendices</h2>
-        
-        <h3>Appendix A: Complete Pseudocode for Core Components</h3>
-        
+        <h3>10.3 Final Architecture Summary</h3>
         <pre><code>
-// Complete System Orchestration
-procedure VECTORIZED-QUERY-SYNTHESIS($\mathcal{Q}_{\text{user}}$, $\mathcal{D}_{\text{db}}$)
-    // Phase 1: Schema Materialization
-    $\psi \leftarrow$ SchemaProfiler($\mathcal{D}_{\text{db}}$.uri, $\mathcal{D}_{\text{db}}$.tables)
-    $\mathcal{M}_{\text{schema}} \leftarrow \psi.\text{materialize}()$
-    
-    // Phase 2: Statistical Profiling
-    $\Delta \leftarrow$ DataProfilingLayer($\mathcal{D}_{\text{db}}$.uri, $\mathcal{D}_{\text{db}}$.tables)
-    $\mathcal{M}_{\text{stats}} \leftarrow \Delta.\text{profile}()$
-    
-    // Phase 3: Context Augmentation
-    $\mathcal{C}_{\text{rich}} \leftarrow \text{ENRICH-CONTEXT}(\mathcal{M}_{\text{schema}}, \mathcal{M}_{\text{stats}})$
-    
-    // Phase 4: Plan Synthesis
-    $\mathcal{R} \leftarrow$ SQLReasonerController($\mathcal{D}_{\text{db}}$.uri, $\mathcal{C}_{\text{rich}}$)
-    $\Pi \leftarrow \mathcal{R}.\text{plan}(\mathcal{Q}_{\text{user}})$
-    
-    // Phase 5: Execution with Refinement
-    $\mathcal{E}_{\text{executor}} \leftarrow$ ExecutionRuntime(pool_size=$\kappa_{\text{opt}}$)
-    $\langle \mathcal{D}_{\text{out}}, \mathcal{L}_{\text{exec}} \rangle \leftarrow \mathcal{E}_{\text{executor}}.\text{run}(\Pi, \text{max\_retries}=3)$
-    
-    // Phase 6: Verification
-    $\langle \text{verified}, \mathcal{S}_{\text{diag}} \rangle \leftarrow$ VERIFY-FINAL-RESULTS($\mathcal{D}_{\text{out}}$, $\mathcal{Q}_{\text{user}}$)
-    
-    // Phase 7: Materialization
-    if $\text{verified}$ then
-        MATERIALIZE($\mathcal{D}_{\text{out}}$, format="json", compression="gzip")
-        PUBLISH-METRICS($\mathcal{L}_{\text{exec}}$)
-    else
-        TRIGGER-ALERT($\mathcal{S}_{\text{diag}}$)
-        INITIATE-BACKTRACKING($\Pi$, $\mathcal{L}_{\text{exec}}$)
-    end if
-    
-    return $\langle \text{verified}, \mathcal{D}_{\text{out}}, \mathcal{S}_{\text{diag}} \rangle$
-end procedure
-        </code></pre>
-        
-        <h3>Appendix B: Configuration Parameters</h3>
-        <pre><code>
-// System Hyperparameters
-CONFIG = {
-    "schema_profiling": {
-        "sample_limit": 10,
-        "validation_sample_size": 100,
-        "join_timeout": 5.0,
-        "similarity_threshold": 0.6
-    },
-    "data_profiling": {
-        "max_str_length": 50,
-        "entropy_bins": 20,
-        "quality_weights": [0.3, 0.2, 0.3, 0.2]  // [completeness, uniqueness, consistency, validity]
-    },
-    "connection_pool": {
-        "pool_size": 5,
-        "connection_timeout": 30,
-        "retry_backoff_base": 0.1,
-        "health_check_interval": 300
-    },
-    "llm_integration": {
-        "model": "openai/gpt-oss-120b",
-        "temperature": 0.1,
-        "max_tokens": 8000,
-        "rate_limit_delay": 1.0,
-        "cache_enabled": true,
-        "cache_ttl": 3600
-    },
-    "execution_runtime": {
-        "max_retries": 3,
-        "statement_timeout": 30,
-        "validation_sample_rows": 10,
-        "semantic_threshold": 0.75
-    }
-}
+┌────────────────────────────────────────────────────────────────────────┐
+│              SYSTEM ARCHITECTURE AT A GLANCE                          │
+│                                                                      │
+│  [User] ──► [Orchestrator]                                           │
+│              │                                                        │
+│              ├──► [Schema Profiler] ──► SchemaProfile                │
+│              │        │                                                │
+│              │        ├── Extract metadata from information_schema     │
+│              │        ├── Build relationship graph                     │
+│              │        └── Validate joins via EXISTS queries            │
+│              │                                                        │
+│              ├──► [Data Profiler] ──► DataProfile                     │
+│              │        │                                                │
+│              │        ├── Compute column statistics                   │
+│              │        ├── Infer categories                             │
+│              │        └── Generate quality scores                     │
+│              │                                                        │
+│              ├──► [SQL Reasoner]                                      │
+│              │        │                                                │
+│              │        ├── Create execution plan (LLM)                 │
+│              │        ├── Execute steps with retry logic              │
+│              │        ├── Refine queries on error                     │
+│              │        └── Construct nested final query                │
+│              │                                                        │
+│              └──► [Output] ──► Save results & metrics                │
+│                                                                      │
+│  Key Patterns:                                                       │
+│  • Pipeline architecture with typed interfaces                       │
+│  • Connection pooling for resource efficiency                        │
+│  • Retry state machine for fault tolerance                           │
+│  • Fuzzy matching for schema ambiguity                               │
+│  • LLM augmentation for query refinement                             │
+└────────────────────────────────────────────────────────────────────────┘
         </code></pre>
     </div>
+
+    <!-- Rest of the document continues with same structure -->
 </div></body>
 </html>
